@@ -1,0 +1,8 @@
+*.dmp
+*.ilk
+Build/*.log
+Build/projects
+Build/obj
+Build/lib
+Build/bin
+*__pycache__*
