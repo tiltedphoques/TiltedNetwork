@@ -17,7 +17,7 @@ workspace ("DestroyerOfWorlds")
 
     includedirs
     { 
-        "../Include/", 
+        "../ThirdParty/", 
         "../Code/"
     }
 	
@@ -50,6 +50,7 @@ workspace ("DestroyerOfWorlds")
                 "../Code/tests/include/",
 				"../Code/network/include/",
 				"../Code/protocol/include/",
+                "../Code/core/include/"
             }
 
             files
@@ -60,8 +61,9 @@ workspace ("DestroyerOfWorlds")
 			
 			links
 			{
-				"Network",
-				"Protocol"
+--				"Network",
+--				"Protocol",
+                "Core"
 			}
 			
 			filter { "architecture:*86" }
@@ -79,6 +81,7 @@ workspace ("DestroyerOfWorlds")
 
             includedirs
             {
+                "../Code/core/include/",
                 "../Code/network/include/",
             }
 
@@ -109,6 +112,29 @@ workspace ("DestroyerOfWorlds")
             {
                 "../Code/protocol/include/**.h",
                 "../Code/protocol/src/**.cpp",
+            }
+
+            filter { "architecture:*86" }
+                libdirs { "lib/x32" }
+                targetdir ("lib/x32")
+
+            filter { "architecture:*64" }
+                libdirs { "lib/x64" }
+                targetdir ("lib/x64")
+                
+		project ("Core")
+            kind ("StaticLib")
+            language ("C++")
+
+            includedirs
+            {
+                "../Code/core/include/",
+            }
+
+            files
+            {
+                "../Code/core/include/**.h",
+                "../Code/core/src/**.cpp",
             }
 
             filter { "architecture:*86" }
