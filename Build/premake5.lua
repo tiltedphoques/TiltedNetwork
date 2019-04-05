@@ -7,12 +7,17 @@ workspace ("DestroyerOfWorlds")
     ------------------------------------------------------------------
     configurations { "Debug", "Release" }
     defines { "_CRT_SECURE_NO_WARNINGS" }
-    flags { "StaticRuntime" }
-    floatingpoint ("Fast")
+
     location ("projects")
     startproject ("Tests")
-    vectorextensions ("SSE2")
-
+    
+    staticruntime "On"
+    floatingpoint "Fast"
+    vectorextensions "SSE2"
+    warnings "Extra"
+    
+    cppdialect "C++17"
+    
     platforms { "x32", "x64" }
 
     includedirs
@@ -21,13 +26,12 @@ workspace ("DestroyerOfWorlds")
         "../Code/"
     }
 	
-	flags { "ExtraWarnings", "StaticRuntime", "FloatFast", "EnableSSE2" }
-
+    
     filter { "action:vs*"}
         buildoptions { "/wd4512", "/wd4996", "/wd4018", "/Zm500" }
         
     filter { "action:gmake", "language:C++" }
-            buildoptions { "-g --std=c++14 -fpermissive" }
+            buildoptions { "-g --std=c++17 -fpermissive" }
             linkoptions ("-lm -lpthread -pthread -Wl,--no-as-needed -lrt -g -fPIC")
             
     filter { "configurations:Release" }
@@ -44,6 +48,7 @@ workspace ("DestroyerOfWorlds")
 		project ("Tests")
 			kind ("ConsoleApp")
 			language ("C++")
+            
 			
 			includedirs
             {

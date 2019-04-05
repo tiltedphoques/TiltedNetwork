@@ -65,6 +65,11 @@ public:
         return *this;
     }
 
+    operator bool() const
+    {
+        return !HasError();
+    }
+
     inline bool HasError() const
     {
         return m_failed;

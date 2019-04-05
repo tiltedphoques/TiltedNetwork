@@ -3,6 +3,8 @@
 #include "StandardAllocator.h"
 #include "BoundedAllocator.h"
 #include <string>
+#include <thread>
+#include <future>
 
 TEST_CASE("Outcome saves the result and errors", "[core.outcome]")
 {
@@ -56,6 +58,27 @@ TEST_CASE("Allocators allocate memory", "[core.allocators]")
         REQUIRE(pData != nullptr);
         REQUIRE(allocator.Size(pData) == 100);
         allocator.Free(pData);
+
+        WHEN("Using new/delete")
+        {
+            auto pInteger = allocator.New<uint32_t>();
+            REQUIRE(pInteger != nullptr);
+            allocator.Delete(pInteger);
+
+            struct Dummy
+            {
+                Dummy(int& aValue) : m_value(aValue) { m_value++; }
+                ~Dummy() { m_value++; }
+                int& m_value;
+            };
+
+            int value = 0;
+            auto pDummy = allocator.New<Dummy>(std::ref(value));
+            REQUIRE(pDummy != nullptr);
+            REQUIRE(value == 1);
+            allocator.Delete(pDummy);
+            REQUIRE(value == 2);
+        }
     }
 
     GIVEN("A BoundedAllocator")
@@ -97,6 +120,56 @@ TEST_CASE("Allocators allocate memory", "[core.allocators]")
             REQUIRE(pDataBis == nullptr);
 
             allocator.Free(pData);
+        }
+    }
+}
+
+TEST_CASE("Making sure allocator stacks work corrently", "[core.allocator.stack]")
+{
+    GIVEN("No allocator has been pushed")
+    {
+        REQUIRE(Allocator::Get() != nullptr);
+        auto pAllocation = Allocator::Get()->Allocate(100);
+        REQUIRE(pAllocation != nullptr);
+        Allocator::Get()->Free(pAllocation);
+
+        WHEN("Pushing an allocator")
+        {
+            BoundedAllocator allocator(1000);
+            Allocator::Push(&allocator);
+            REQUIRE(Allocator::Get() == &allocator);
+            auto futureResult = std::async(std::launch::async, []() { return Allocator::Get(); });
+            REQUIRE(futureResult.get() != &allocator);
+            REQUIRE(Allocator::Pop() == &allocator);
+            REQUIRE(Allocator::Get() != &allocator);
+        }
+        WHEN("Using allocators indirectly")
+        {
+            GIVEN("A pod type")
+            {
+                auto pValue = New<int>(42);
+                REQUIRE(pValue != nullptr);
+                REQUIRE(*pValue == 42);
+            }
+
+            GIVEN("An AllocatorCompatible type")
+            {
+                struct Dummy : AllocatorCompatible
+                {
+                    Dummy()
+                    {
+                        REQUIRE(GetAllocator() != nullptr);
+                        auto pData = GetAllocator()->Allocate(100);
+                        REQUIRE(pData != nullptr);
+                        GetAllocator()->Free(pData);
+                    }
+
+                    ~Dummy() {}
+                };
+
+                auto pDummy = New<Dummy>();
+                Delete(pDummy);
+            }
         }
     }
 }
