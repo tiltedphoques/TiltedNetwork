@@ -1,7 +1,11 @@
 #include "catch.hpp"
+
 #include "Outcome.h"
 #include "StandardAllocator.h"
 #include "BoundedAllocator.h"
+#include "ScratchAllocator.h"
+#include "StackAllocator.h"
+
 #include <string>
 #include <thread>
 #include <future>
@@ -172,4 +176,26 @@ TEST_CASE("Making sure allocator stacks work corrently", "[core.allocator.stack]
             }
         }
     }
+}
+
+TEST_CASE("Using a scratch allocator", "[core.allocator.scratch]")
+{
+    ScratchAllocator allocator(1000);
+
+    REQUIRE(allocator.Size(nullptr) == 1000);
+
+    void* pResult = allocator.Allocate(10);
+    REQUIRE(pResult != nullptr);
+    pResult = allocator.Allocate(1000);
+    REQUIRE(pResult == nullptr);
+}
+
+TEST_CASE("Allocating memory on the stack", "[core.allocator.stack]")
+{
+    StackAllocator<1000> allocator;
+    REQUIRE(allocator.Size(nullptr) == 1000);
+
+    auto pResult = allocator.Allocate(100);
+    REQUIRE(pResult != nullptr);
+    REQUIRE(allocator.Allocate(1000) == nullptr);
 }

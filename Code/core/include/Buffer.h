@@ -1,25 +1,25 @@
 #pragma once
 
 #include <cstdint>
+#include "Allocator.h"
 
-class Buffer
+class Buffer : public AllocatorCompatible
 {
 public:
 
-    Buffer();
-    virtual ~Buffer() = 0;
+    Buffer(size_t aSize);
+    virtual ~Buffer();
+
+    uint8_t operator[](size_t aIndex) const;
+    uint8_t& operator[](size_t aIndex);
+
+    size_t GetSize() const;
+
+    const uint8_t* GetData() const;
+    uint8_t* GetData();
 
 private:
-};
 
-class FixedBuffer
-{
-public:
-
-    FixedBuffer(size_t aLength);
-    virtual ~FixedBuffer();
-
-private:
-
-    Allocator* m_pAllocator;
+    uint8_t* m_pData;
+    size_t m_size;
 };

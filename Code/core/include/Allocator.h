@@ -16,10 +16,13 @@ private:
 namespace details
 {
     template<typename T>
-    using has_allocator_t = decltype(std::declval<T&>().GetAllocator());
+    using has_get_allocator_t = decltype(std::declval<T&>().GetAllocator());
 
     template<typename T>
-    constexpr bool has_allocator = is_detected_v<has_allocator_t, T>;
+    using has_set_allocator_t = decltype(std::declval<T&>().SetAllocator(nullptr));
+
+    template<typename T>
+    constexpr bool has_allocator = is_detected_v<has_get_allocator_t, T> && is_detected_v<has_set_allocator_t, T>;
 }
 
 class Allocator
@@ -34,6 +37,8 @@ public:
     template<class T>
     T* New()
     {
+        static_assert(alignof(T) <= alignof(std::max_align_t));
+
         auto pData = (T*)Allocate(sizeof(T));
         if (pData)
         {
@@ -49,6 +54,8 @@ public:
     template<class T, class... Args>
     T* New(Args... args)
     {
+        static_assert(alignof(T) <= alignof(std::max_align_t));
+
         auto pData = (T*)Allocate(sizeof(T));
         if (pData)
         {
