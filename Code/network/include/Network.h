@@ -17,4 +17,4 @@
 void InitializeNetwork();
 void ShutdownNetwork();
 
-using Socket_t = decltype(socket(AF_INET, 0, SOCK_DGRAM));
+using Socket_t = decltype(socket(AF_INET, SOCK_DGRAM, 0));
