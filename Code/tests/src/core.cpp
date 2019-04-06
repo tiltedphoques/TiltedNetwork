@@ -195,7 +195,12 @@ TEST_CASE("Allocating memory on the stack", "[core.allocator.stack]")
     StackAllocator<1000> allocator;
     REQUIRE(allocator.Size(nullptr) == 1000);
 
-    auto pResult = allocator.Allocate(100);
-    REQUIRE(pResult != nullptr);
-    REQUIRE(allocator.Allocate(1000) == nullptr);
+    for (auto i{ 0 }; i < 10; ++i)
+    {
+        auto pResult = allocator.Allocate(3);
+        REQUIRE(pResult != nullptr);
+        REQUIRE((uintptr_t(pResult) & (alignof(std::max_align_t) - 1)) == 0);
+        REQUIRE(allocator.Allocate(1000) == nullptr);
+    }
+
 }
