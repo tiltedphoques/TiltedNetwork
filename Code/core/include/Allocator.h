@@ -2,16 +2,6 @@
 
 #include "Meta.h"
 
-class Allocator;
-struct AllocatorCompatible
-{
-    void SetAllocator(Allocator* apAllocator) { m_pAllocator = apAllocator; }
-    Allocator* GetAllocator() { return m_pAllocator; }
-
-private:
-
-    Allocator* m_pAllocator;
-};
 
 namespace details
 {
@@ -42,9 +32,6 @@ public:
         auto pData = (T*)Allocate(sizeof(T));
         if (pData)
         {
-            if constexpr (details::has_allocator<T>)
-                pData->SetAllocator(this);
-
             return new (pData) T();
         }
 
@@ -59,9 +46,6 @@ public:
         auto pData = (T*)Allocate(sizeof(T));
         if (pData)
         {
-            if constexpr (details::has_allocator<T>)
-                pData->SetAllocator(this);
-
             return new (pData) T(std::forward<Args...>(args...));
         }
 
@@ -92,6 +76,16 @@ private:
 
     static thread_local Allocator* s_allocatorStack[kMaxAllocatorCount];
     static thread_local int s_currentAllocator;
+};
+
+struct AllocatorCompatible
+{
+    void SetAllocator(Allocator* apAllocator) { m_pAllocator = apAllocator; }
+    Allocator* GetAllocator() { return m_pAllocator; }
+
+private:
+
+    Allocator* m_pAllocator{ Allocator::Get() };
 };
 
 

@@ -31,8 +31,8 @@ workspace ("DestroyerOfWorlds")
         buildoptions { "/wd4512", "/wd4996", "/wd4018", "/Zm500" }
         
     filter { "action:gmake", "language:C++" }
-            buildoptions { "-g --std=c++17 -fpermissive" }
-            linkoptions ("-lm -lpthread -pthread -Wl,--no-as-needed -lrt -g -fPIC")
+        buildoptions { "-g -fpermissive" }
+        linkoptions ("-lm -lpthread -pthread -Wl,--no-as-needed -lrt -g -fPIC")
             
     filter { "configurations:Release" }
         defines { "NDEBUG"}
@@ -42,36 +42,36 @@ workspace ("DestroyerOfWorlds")
     filter { "configurations:Debug" }
         defines { "DEBUG" }
         optimize ("Off")
-		symbols ( "On" )
+        symbols ( "On" )
 
-	group ("Applications")
-		project ("Tests")
-			kind ("ConsoleApp")
-			language ("C++")
+    group ("Applications")
+        project ("Tests")
+            kind ("ConsoleApp")
+            language ("C++")
             
 			
-			includedirs
+            includedirs
             {
                 "../Code/tests/include/",
-				"../Code/network/include/",
-				"../Code/protocol/include/",
+                "../Code/network/include/",
+                "../Code/protocol/include/",
                 "../Code/core/include/"
             }
 
-            files
-            {
+             files
+             {
                 "../Code/tests/include/**.h",
                 "../Code/tests/src/**.cpp",
             }
 			
-			links
-			{
---				"Network",
---				"Protocol",
+            links
+            {
+                "Network",
+--              "Protocol",
                 "Core"
-			}
+            }
 			
-			filter { "architecture:*86" }
+            filter { "architecture:*86" }
                 libdirs { "lib/x32" }
                 targetdir ("bin/x32")
 
@@ -104,7 +104,7 @@ workspace ("DestroyerOfWorlds")
                 libdirs { "lib/x64" }
                 targetdir ("lib/x64")
 				
-		project ("Protocol")
+        project ("Protocol")
             kind ("StaticLib")
             language ("C++")
 
@@ -127,7 +127,7 @@ workspace ("DestroyerOfWorlds")
                 libdirs { "lib/x64" }
                 targetdir ("lib/x64")
                 
-		project ("Core")
+        project ("Core")
             kind ("StaticLib")
             language ("C++")
 

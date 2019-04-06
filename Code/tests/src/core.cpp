@@ -1,10 +1,12 @@
 #include "catch.hpp"
 
+#include "Buffer.h"
 #include "Outcome.h"
 #include "StandardAllocator.h"
 #include "BoundedAllocator.h"
 #include "ScratchAllocator.h"
 #include "StackAllocator.h"
+#include "TrackAllocator.h"
 
 #include <string>
 #include <thread>
@@ -60,7 +62,7 @@ TEST_CASE("Allocators allocate memory", "[core.allocators]")
 
         auto pData = allocator.Allocate(100);
         REQUIRE(pData != nullptr);
-        REQUIRE(allocator.Size(pData) == 100);
+        REQUIRE(allocator.Size(pData) >= 100);
         allocator.Free(pData);
 
         WHEN("Using new/delete")
@@ -92,21 +94,21 @@ TEST_CASE("Allocators allocate memory", "[core.allocators]")
         {
             auto pData = allocator.Allocate(1000);
             REQUIRE(pData != nullptr);
-            REQUIRE(allocator.Size(pData) == 1000);
+            REQUIRE(allocator.Size(pData) >= 1000);
             allocator.Free(pData);
 
             pData = allocator.Allocate(1000);
             REQUIRE(pData != nullptr);
-            REQUIRE(allocator.Size(pData) == 1000);
+            REQUIRE(allocator.Size(pData) >= 1000);
             allocator.Free(pData);
 
             pData = allocator.Allocate(900);
             REQUIRE(pData != nullptr);
-            REQUIRE(allocator.Size(pData) == 900);
+            REQUIRE(allocator.Size(pData) >= 900);
 
             auto pDataBis = allocator.Allocate(100);
             REQUIRE(pDataBis != nullptr);
-            REQUIRE(allocator.Size(pDataBis) == 100);
+            REQUIRE(allocator.Size(pDataBis) >= 100);
 
             allocator.Free(pData);
             allocator.Free(pDataBis);
@@ -118,7 +120,7 @@ TEST_CASE("Allocators allocate memory", "[core.allocators]")
 
             pData = allocator.Allocate(900);
             REQUIRE(pData != nullptr);
-            REQUIRE(allocator.Size(pData) == 900);
+            REQUIRE(allocator.Size(pData) >= 900);
 
             auto pDataBis = allocator.Allocate(101);
             REQUIRE(pDataBis == nullptr);
@@ -140,21 +142,32 @@ TEST_CASE("Making sure allocator stacks work corrently", "[core.allocator.stack]
         WHEN("Pushing an allocator")
         {
             BoundedAllocator allocator(1000);
+
             Allocator::Push(&allocator);
+
             REQUIRE(Allocator::Get() == &allocator);
             auto futureResult = std::async(std::launch::async, []() { return Allocator::Get(); });
             REQUIRE(futureResult.get() != &allocator);
             REQUIRE(Allocator::Pop() == &allocator);
             REQUIRE(Allocator::Get() != &allocator);
         }
+
+        TrackAllocator<StandardAllocator> tracker;
+        ScopedAllocator _(&tracker);
+
         WHEN("Using allocators indirectly")
         {
             GIVEN("A pod type")
             {
                 auto pValue = New<int>(42);
+                // PODs use the default pool
+                REQUIRE(tracker.GetUsedMemory() == 0);
                 REQUIRE(pValue != nullptr);
                 REQUIRE(*pValue == 42);
+                Delete(pValue);
             }
+
+            REQUIRE(tracker.GetUsedMemory() == 0);
 
             GIVEN("An AllocatorCompatible type")
             {
@@ -172,8 +185,13 @@ TEST_CASE("Making sure allocator stacks work corrently", "[core.allocator.stack]
                 };
 
                 auto pDummy = New<Dummy>();
+
+                REQUIRE(tracker.GetUsedMemory() != 0);
+
                 Delete(pDummy);
             }
+
+            REQUIRE(tracker.GetUsedMemory() == 0);
         }
     }
 }
@@ -203,4 +221,71 @@ TEST_CASE("Allocating memory on the stack", "[core.allocator.stack]")
         REQUIRE(allocator.Allocate(1000) == nullptr);
     }
 
+}
+
+TEST_CASE("Buffers", "[core.buffer]")
+{
+    TrackAllocator<StandardAllocator> tracker;
+    ScopedAllocator _{ &tracker };
+
+    GIVEN("Two buffers")
+    {
+        Buffer buffer1(100);
+        Buffer buffer2(200);
+
+        REQUIRE(buffer1.GetSize() == 100);
+        REQUIRE(buffer2.GetSize() == 200);
+
+        buffer1[0] = 42;
+        buffer1[99] = 84;
+        buffer2[0] = 1;
+        buffer2[199] = 2;
+
+        REQUIRE(buffer1[0] == 42);
+        REQUIRE(buffer1[99] == 84);
+        REQUIRE(buffer2[0] == 1);
+        REQUIRE(buffer2[199] == 2);
+
+        WHEN("Copying one")
+        {
+            Buffer buffer3(buffer1);
+            Buffer buffer4;
+
+            REQUIRE(buffer4.GetSize() == 0);
+            REQUIRE(buffer4.GetData() == nullptr);
+
+            REQUIRE(buffer3.GetSize() == 100);
+            REQUIRE(buffer3[0] == 42);
+            REQUIRE(buffer3[99] == 84);
+
+            buffer4 = buffer3;
+
+            REQUIRE(buffer4.GetSize() == 100);
+            REQUIRE(buffer4[0] == 42);
+            REQUIRE(buffer4[99] == 84);
+        }
+        WHEN("Moving one")
+        {
+            Buffer buffer3(std::move(buffer1));
+            Buffer buffer4;
+
+            REQUIRE(buffer1.GetSize() == 0);
+            REQUIRE(buffer1.GetData() == nullptr);
+
+            REQUIRE(buffer3.GetSize() == 100);
+            REQUIRE(buffer3[0] == 42);
+            REQUIRE(buffer3[99] == 84);
+
+            buffer4 = std::move(buffer3);
+
+            REQUIRE(buffer3.GetSize() == 0);
+            REQUIRE(buffer3.GetData() == nullptr);
+
+            REQUIRE(buffer4.GetSize() == 100);
+            REQUIRE(buffer4[0] == 42);
+            REQUIRE(buffer4[99] == 84);
+        }
+    }
+
+    REQUIRE(tracker.GetUsedMemory() == 0);
 }

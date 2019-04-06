@@ -5,6 +5,7 @@
 thread_local Allocator* Allocator::s_allocatorStack[kMaxAllocatorCount];
 thread_local int Allocator::s_currentAllocator{ -1 };
 
+
 void Allocator::Push(Allocator* apAllocator)
 {
     if (s_currentAllocator + 1 < kMaxAllocatorCount)
