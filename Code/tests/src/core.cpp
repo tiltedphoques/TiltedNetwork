@@ -287,5 +287,88 @@ TEST_CASE("Buffers", "[core.buffer]")
         }
     }
 
+    GIVEN("Views")
+    {
+        Buffer buffer(100);
+
+        WHEN("Using a cursor")
+        {
+            Buffer::Cursor cursor(&buffer);
+
+            REQUIRE(cursor.GetBitPosition() == 0);
+            REQUIRE(cursor.GetBytePosition() == 0);
+            REQUIRE(cursor.Eof() == false);
+
+            cursor.Advance(10);
+
+            REQUIRE(cursor.GetBitPosition() == 80);
+            REQUIRE(cursor.GetBytePosition() == 10);
+            REQUIRE(cursor.Eof() == false);
+
+            cursor.Reverse(5);
+
+            REQUIRE(cursor.GetBitPosition() == 40);
+            REQUIRE(cursor.GetBytePosition() == 5);
+
+            cursor.Reset();
+
+            REQUIRE(cursor.GetBitPosition() == 0);
+            REQUIRE(cursor.GetBytePosition() == 0);
+
+            cursor.Advance(100);
+
+            REQUIRE(cursor.Eof() == true);
+        }
+        
+        WHEN("Using a writer")
+        {
+            Buffer buffer(100);
+
+            Buffer::Writer writer(&buffer);
+
+            REQUIRE(writer.GetBitPosition() == 0);
+            REQUIRE(writer.GetBytePosition() == 0);
+            REQUIRE(writer.Eof() == false);
+
+            char* testData = "atest";
+            writer.WriteBytes((uint8_t*)testData, 1);
+
+            REQUIRE(writer.GetBitPosition() == 8);
+            REQUIRE(writer.GetBytePosition() == 1);
+            REQUIRE(writer.Eof() == false);
+
+            
+            writer.WriteBytes((uint8_t*)testData + 1, 4);
+            REQUIRE(writer.GetBitPosition() == 40);
+            REQUIRE(writer.GetBytePosition() == 5);
+            REQUIRE(writer.Eof() == false);
+
+            REQUIRE(memcmp(testData, buffer.GetData(), 5) == 0);
+
+            WHEN("Using a reader")
+            {
+                Buffer::Reader reader(&buffer);
+
+                REQUIRE(reader.GetBitPosition() == 0);
+                REQUIRE(reader.GetBytePosition() == 0);
+                REQUIRE(reader.Eof() == false);
+
+                char rawBuffer[5];
+                reader.ReadBytes((uint8_t*)rawBuffer, 1);
+                REQUIRE(reader.GetBitPosition() == 8);
+                REQUIRE(reader.GetBytePosition() == 1);
+                REQUIRE(reader.Eof() == false);
+
+                reader.ReadBytes((uint8_t*)rawBuffer + 1, 4);
+                REQUIRE(reader.GetBitPosition() == 40);
+                REQUIRE(reader.GetBytePosition() == 5);
+                REQUIRE(reader.Eof() == false);
+
+                REQUIRE(memcmp(testData, rawBuffer, 5) == 0);
+            }
+        }
+
+    }
+
     REQUIRE(tracker.GetUsedMemory() == 0);
 }

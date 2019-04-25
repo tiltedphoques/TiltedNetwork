@@ -77,3 +77,97 @@ uint8_t* Buffer::GetWriteData()
 {
     return m_pData;
 }
+
+Buffer::Cursor::Cursor(Buffer* apBuffer)
+    : m_pBuffer(apBuffer)
+    , m_bitPosition(0)
+{
+
+}
+
+void Buffer::Cursor::Advance(size_t aByteCount)
+{
+    m_bitPosition += aByteCount * 8;
+}
+
+void Buffer::Cursor::Reverse(size_t aByteCount)
+{
+    if (aByteCount * 8 <= m_bitPosition)
+    {
+        m_bitPosition -= aByteCount * 8;
+    }
+}
+
+void Buffer::Cursor::Reset()
+{
+    m_bitPosition = 0;
+}
+
+bool Buffer::Cursor::Eof() const
+{
+    return m_bitPosition >= m_pBuffer->GetSize() * 8;
+}
+
+size_t Buffer::Cursor::GetBitPosition() const
+{
+    return m_bitPosition;
+}
+
+size_t Buffer::Cursor::GetBytePosition() const
+{
+    return m_bitPosition / 8;
+}
+
+Buffer::Reader::Reader(Buffer* apBuffer)
+    : Buffer::Cursor(apBuffer)
+{
+
+}
+
+bool Buffer::Reader::ReadBits(uint64_t& aDestination, size_t aCount)
+{
+    return false;
+}
+
+bool Buffer::Reader::ReadBytes(uint8_t* apDestination, size_t aCount)
+{
+    if (aCount + GetBytePosition() <= m_pBuffer->GetSize())
+    {
+        std::copy(m_pBuffer->GetData() + GetBytePosition(), m_pBuffer->GetData() + GetBytePosition() + aCount, apDestination);
+
+        Advance(aCount);
+
+        return true;
+    }
+
+    return false;
+}
+
+Buffer::Writer::Writer(Buffer* apBuffer)
+    : Buffer::Cursor(apBuffer)
+{
+
+}
+
+Buffer::Writer::~Writer()
+{
+}
+
+bool Buffer::Writer::WriteBits(uint64_t aData, size_t aCount)
+{
+    return false;
+}
+
+bool Buffer::Writer::WriteBytes(uint8_t* apSource, size_t aCount)
+{
+    if (aCount + GetBytePosition() <= m_pBuffer->GetSize())
+    {
+        std::copy(apSource, apSource + aCount, m_pBuffer->GetWriteData() + GetBytePosition());
+
+        Advance(aCount);
+
+        return true;
+    }
+
+    return false;
+}

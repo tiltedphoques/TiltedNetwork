@@ -24,6 +24,41 @@ public:
     const uint8_t* GetData() const;
     uint8_t* GetWriteData();
 
+    struct Cursor
+    {
+        Cursor(Buffer* apBuffer);
+
+        void Reset();
+        bool Eof() const;
+        void Advance(size_t aByteCount);
+        void Reverse(size_t aByteCount);
+
+        size_t GetBytePosition() const;
+        size_t GetBitPosition() const;
+
+    protected:
+
+        size_t m_bitPosition;
+        Buffer* m_pBuffer;
+    };
+
+    struct Reader : public Cursor
+    {
+        Reader(Buffer* apBuffer);
+
+        bool ReadBits(uint64_t& aDestination, size_t aCount);
+        bool ReadBytes(uint8_t* apDestination, size_t aCount);
+    };
+
+    struct Writer : public Cursor
+    {
+        Writer(Buffer* apBuffer);
+        ~Writer();
+
+        bool WriteBits(uint64_t aData, size_t aCount);
+        bool WriteBytes(uint8_t* apSource, size_t aCount);
+    };
+
 private:
 
     uint8_t* m_pData;
