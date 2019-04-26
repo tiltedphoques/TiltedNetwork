@@ -85,7 +85,7 @@ bool Socket::Send(const Socket::Packet& acPacket)
         ipv4.sin_family = AF_INET;
         acPacket.Origin.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
 
-        if (sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)&ipv4, sizeof(sockaddr_in6)) < 0)
+        if (sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)&ipv4, sizeof(sockaddr_in)) < 0)
             return false; 
     }
 
