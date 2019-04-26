@@ -2,6 +2,9 @@
 
 #include "Socket.h"
 
+#include <cstring>
+
+
 TEST_CASE("Networking", "[network]")
 {
     InitializeNetwork();
@@ -37,7 +40,7 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(result.HasError() == false);
         auto data = result.GetResult();
         REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Endpoint.IsIPv6());
+        REQUIRE(data.Remote.IsIPv6());
 
         // Reply exactly what we got to the client
         REQUIRE(server.Send(data));
@@ -45,7 +48,7 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(result.HasError() == false);
         data = result.GetResult();
         REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Endpoint.IsIPv6());
+        REQUIRE(data.Remote.IsIPv6());
     }
 }
 

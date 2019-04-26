@@ -13,7 +13,7 @@ workspace ("DestroyerOfWorlds")
     
     staticruntime "On"
     floatingpoint "Fast"
-    vectorextensions "SSE2"
+    vectorextensions "AVX2"
     warnings "Extra"
     
     cppdialect "C++17"
@@ -30,7 +30,7 @@ workspace ("DestroyerOfWorlds")
     filter { "action:vs*"}
         buildoptions { "/wd4512", "/wd4996", "/wd4018", "/Zm500" }
         
-    filter { "action:gmake", "language:C++" }
+    filter { "action:gmake2", "language:C++" }
         buildoptions { "-g -fpermissive" }
         linkoptions ("-lm -lpthread -pthread -Wl,--no-as-needed -lrt -g -fPIC")
             
@@ -71,6 +71,7 @@ workspace ("DestroyerOfWorlds")
                 "Core",
                 "cryptopp"
             }
+          
 			
             filter { "architecture:*86" }
                 libdirs { "lib/x32" }
@@ -169,7 +170,8 @@ workspace ("DestroyerOfWorlds")
             defines 
             {
                 "_WINSOCK_DEPRECATED_NO_WARNINGS",
-                "_LIB"
+                "_LIB",
+                "CRYPTOPP_DISABLE_SSSE3"
             }
             
             includedirs
@@ -274,14 +276,10 @@ workspace ("DestroyerOfWorlds")
                 "../ThirdParty/cryptopp/safer.cpp",
                 "../ThirdParty/cryptopp/salsa.cpp",
                 "../ThirdParty/cryptopp/seal.cpp",
-                "../ThirdParty/cryptopp/sha_simd.cpp",
-                "../ThirdParty/cryptopp/gf2n_simd.cpp",
                 "../ThirdParty/cryptopp/sse_simd.cpp",
-                "../ThirdParty/cryptopp/rijndael_simd.cpp",
                 "../ThirdParty/cryptopp/seed.cpp",
                 "../ThirdParty/cryptopp/serpent.cpp",
                 "../ThirdParty/cryptopp/sha.cpp",
-                "../ThirdParty/cryptopp/sha_simd.cpp",
                 "../ThirdParty/cryptopp/sha3.cpp",
                 "../ThirdParty/cryptopp/shacal2.cpp",
                 "../ThirdParty/cryptopp/shark.cpp",

@@ -1,6 +1,8 @@
 #include "catch.hpp"
 
 #include "DHChachaFilter.h"
+#include <cstring>
+
 
 TEST_CASE("Protocol DHChaCha", "[protocol.dhchacha]")
 {

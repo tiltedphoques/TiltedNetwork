@@ -11,6 +11,7 @@
 #include <string>
 #include <thread>
 #include <future>
+#include <cstring>
 
 TEST_CASE("Outcome saves the result and errors", "[core.outcome]")
 {

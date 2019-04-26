@@ -18,7 +18,7 @@ public:
 
     struct Packet
     {
-        Endpoint Endpoint;
+        Endpoint Remote;
         Buffer Payload;
     };
 

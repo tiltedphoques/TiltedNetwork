@@ -34,7 +34,7 @@ public:
     uint16_t* GetIPv6();
 
     bool ToNetIPv4(uint32_t& aDestination) const;
-    bool ToNetIPv6(in_addr6& aDestination) const;
+    bool ToNetIPv6(in6_addr& aDestination) const;
 
     Endpoint& operator=(const Endpoint& acRhs);
     bool operator==(const Endpoint& acRhs) const;

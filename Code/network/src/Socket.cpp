@@ -1,5 +1,5 @@
 #include "Socket.h"
-#include <iostream>
+#include <cstring>
 
 Socket::Socket()
 {
@@ -53,12 +53,12 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
     if (from.ss_family == AF_INET)
     {
         auto* pAddr = (sockaddr_in*)&from;
-        new (&packet.Endpoint) Endpoint(pAddr->sin_addr.s_addr, ntohs(pAddr->sin_port));
+        new (&packet.Remote) Endpoint(pAddr->sin_addr.s_addr, ntohs(pAddr->sin_port));
     }
     else
     {
         auto* pAddr = (sockaddr_in6*)&from;
-        new (&packet.Endpoint) Endpoint((uint16_t*)&pAddr->sin6_addr, ntohs(pAddr->sin6_port));
+        new (&packet.Remote) Endpoint((uint16_t*)&pAddr->sin6_addr, ntohs(pAddr->sin6_port));
     }
 
     return std::move(packet);
@@ -66,13 +66,13 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
 
 bool Socket::Send(const Socket::Packet& acPacket)
 {
-    if (acPacket.Endpoint.IsIPv6())
+    if (acPacket.Remote.IsIPv6())
     {
         sockaddr_in6 ipv6;
         std::memset(&ipv6, 0, sizeof(ipv6));
-        ipv6.sin6_port = htons(acPacket.Endpoint.GetPort());
+        ipv6.sin6_port = htons(acPacket.Remote.GetPort());
         ipv6.sin6_family = AF_INET6;
-        acPacket.Endpoint.ToNetIPv6(ipv6.sin6_addr);
+        acPacket.Remote.ToNetIPv6(ipv6.sin6_addr);
 
         if (sendto(m_sock, (const char*)acPacket.Payload.GetData(), acPacket.Payload.GetSize(), 0, (sockaddr*)& ipv6, sizeof(ipv6)) < 0)
             return false;
@@ -81,9 +81,9 @@ bool Socket::Send(const Socket::Packet& acPacket)
     {
         sockaddr_in ipv4;
         std::memset(&ipv4, 0, sizeof(ipv4));
-        ipv4.sin_port = htons(acPacket.Endpoint.GetPort());
+        ipv4.sin_port = htons(acPacket.Remote.GetPort());
         ipv4.sin_family = AF_INET;
-        acPacket.Endpoint.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
+        acPacket.Remote.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
 
         if (sendto(m_sock, (const char*)acPacket.Payload.GetData(), acPacket.Payload.GetSize(), 0, (sockaddr*)&ipv4, sizeof(sockaddr_in)) < 0)
             return false; 
@@ -111,7 +111,10 @@ bool Socket::Bind(uint16_t aPort)
     if (bind(m_sock, (sockaddr*)& saddr, sizeof(saddr)) < 0)
         return false;
 
-    int len = sizeof(saddr);
+#ifdef _WIN32
+    using socklen_t = int;
+#endif
+    socklen_t len = sizeof(saddr);
     getsockname(m_sock, (sockaddr*)& saddr, &len);
 
     m_port = ntohs(saddr.sin6_port);

@@ -1,6 +1,6 @@
 #include "Endpoint.h"
 #include "Network.h"
-
+#include <cstring>
 
 Endpoint::Endpoint()
 {
@@ -104,7 +104,7 @@ bool Endpoint::ToNetIPv4(uint32_t& aDestination) const
     return true;
 }
 
-bool Endpoint::ToNetIPv6(in_addr6& aDestination) const
+bool Endpoint::ToNetIPv6(in6_addr& aDestination) const
 {
     if (IsIPv6() == false) return false;
 
@@ -136,7 +136,7 @@ bool Endpoint::operator==(const Endpoint& acRhs) const
     if (m_type != acRhs.m_type || m_port != acRhs.m_port)
         return false;
 
-    return std::memcmp(m_ipv6, acRhs.m_ipv6, kIPv6 ? 16 : 4) == 0;
+    return std::memcmp(m_ipv6, acRhs.m_ipv6, IsIPv6() ? 16 : 4) == 0;
 }
 
 bool Endpoint::operator!=(const Endpoint& acRhs) const
@@ -159,7 +159,7 @@ void Endpoint::Parse(const std::string& acEndpoint)
             endpoint[endChar] = '\0';
         }
 
-        in_addr6 sockaddr6;
+        in6_addr sockaddr6;
         if (inet_pton(AF_INET6, &endpoint[1], &sockaddr6) == 1)
         {
             new (this) Endpoint((uint16_t*)& sockaddr6, m_port);
