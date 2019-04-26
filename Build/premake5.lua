@@ -67,8 +67,9 @@ workspace ("DestroyerOfWorlds")
             links
             {
                 "Network",
---              "Protocol",
-                "Core"
+                "Protocol",
+                "Core",
+                "cryptopp"
             }
 			
             filter { "architecture:*86" }
@@ -190,12 +191,18 @@ workspace ("DestroyerOfWorlds")
                 "../ThirdParty/cryptopp/base64.cpp",
                 "../ThirdParty/cryptopp/basecode.cpp",
                 "../ThirdParty/cryptopp/bfinit.cpp",
+                "../ThirdParty/cryptopp/blake2.cpp",
+                "../ThirdParty/cryptopp/blake2b_simd.cpp",
+                "../ThirdParty/cryptopp/blake2s_simd.cpp",
                 "../ThirdParty/cryptopp/blowfish.cpp",
                 "../ThirdParty/cryptopp/blumshub.cpp",
                 "../ThirdParty/cryptopp/cast.cpp",
                 "../ThirdParty/cryptopp/casts.cpp",
                 "../ThirdParty/cryptopp/cbcmac.cpp",
                 "../ThirdParty/cryptopp/ccm.cpp",
+                "../ThirdParty/cryptopp/chacha.cpp",
+                "../ThirdParty/cryptopp/chacha_avx.cpp",
+                "../ThirdParty/cryptopp/chacha_simd.cpp",
                 "../ThirdParty/cryptopp/channels.cpp",
                 "../ThirdParty/cryptopp/cmac.cpp",
                 "../ThirdParty/cryptopp/cpu.cpp",
@@ -274,6 +281,7 @@ workspace ("DestroyerOfWorlds")
                 "../ThirdParty/cryptopp/seed.cpp",
                 "../ThirdParty/cryptopp/serpent.cpp",
                 "../ThirdParty/cryptopp/sha.cpp",
+                "../ThirdParty/cryptopp/sha_simd.cpp",
                 "../ThirdParty/cryptopp/sha3.cpp",
                 "../ThirdParty/cryptopp/shacal2.cpp",
                 "../ThirdParty/cryptopp/shark.cpp",
