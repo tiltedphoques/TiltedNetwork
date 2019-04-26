@@ -18,8 +18,8 @@ public:
 
     struct Packet
     {
-        Endpoint Origin;
-        Buffer Data;
+        Endpoint Endpoint;
+        Buffer Payload;
     };
 
     Socket();

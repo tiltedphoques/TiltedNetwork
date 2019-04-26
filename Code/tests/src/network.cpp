@@ -36,16 +36,16 @@ TEST_CASE("Networking", "[network]")
         auto result = server.Receive();
         REQUIRE(result.HasError() == false);
         auto data = result.GetResult();
-        REQUIRE(std::memcmp(data.Data.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Origin.IsIPv6());
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Endpoint.IsIPv6());
 
         // Reply exactly what we got to the client
         REQUIRE(server.Send(data));
         result = client.Receive();
         REQUIRE(result.HasError() == false);
         data = result.GetResult();
-        REQUIRE(std::memcmp(data.Data.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Origin.IsIPv6());
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Endpoint.IsIPv6());
     }
 }
 

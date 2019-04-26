@@ -53,12 +53,12 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
     if (from.ss_family == AF_INET)
     {
         auto* pAddr = (sockaddr_in*)&from;
-        new (&packet.Origin) Endpoint(pAddr->sin_addr.s_addr, ntohs(pAddr->sin_port));
+        new (&packet.Endpoint) Endpoint(pAddr->sin_addr.s_addr, ntohs(pAddr->sin_port));
     }
     else
     {
         auto* pAddr = (sockaddr_in6*)&from;
-        new (&packet.Origin) Endpoint((uint16_t*)&pAddr->sin6_addr, ntohs(pAddr->sin6_port));
+        new (&packet.Endpoint) Endpoint((uint16_t*)&pAddr->sin6_addr, ntohs(pAddr->sin6_port));
     }
 
     return std::move(packet);
@@ -66,26 +66,26 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
 
 bool Socket::Send(const Socket::Packet& acPacket)
 {
-    if (acPacket.Origin.IsIPv6())
+    if (acPacket.Endpoint.IsIPv6())
     {
         sockaddr_in6 ipv6;
         std::memset(&ipv6, 0, sizeof(ipv6));
-        ipv6.sin6_port = htons(acPacket.Origin.GetPort());
+        ipv6.sin6_port = htons(acPacket.Endpoint.GetPort());
         ipv6.sin6_family = AF_INET6;
-        acPacket.Origin.ToNetIPv6(ipv6.sin6_addr);
+        acPacket.Endpoint.ToNetIPv6(ipv6.sin6_addr);
 
-        if (sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)& ipv6, sizeof(ipv6)) < 0)
+        if (sendto(m_sock, (const char*)acPacket.Payload.GetData(), acPacket.Payload.GetSize(), 0, (sockaddr*)& ipv6, sizeof(ipv6)) < 0)
             return false;
     }
     else
     {
         sockaddr_in ipv4;
         std::memset(&ipv4, 0, sizeof(ipv4));
-        ipv4.sin_port = htons(acPacket.Origin.GetPort());
+        ipv4.sin_port = htons(acPacket.Endpoint.GetPort());
         ipv4.sin_family = AF_INET;
-        acPacket.Origin.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
+        acPacket.Endpoint.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
 
-        if (sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)&ipv4, sizeof(sockaddr_in)) < 0)
+        if (sendto(m_sock, (const char*)acPacket.Payload.GetData(), acPacket.Payload.GetSize(), 0, (sockaddr*)&ipv4, sizeof(sockaddr_in)) < 0)
             return false; 
     }
 
