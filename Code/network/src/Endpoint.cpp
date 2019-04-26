@@ -20,7 +20,7 @@ Endpoint::Endpoint(const Endpoint& acRhs)
 {
     m_port = acRhs.m_port;
     m_type = acRhs.m_type;
-    std::copy(std::begin(m_ipv6), std::end(m_ipv6), std::begin(m_ipv6));
+    std::copy(std::begin(acRhs.m_ipv6), std::end(acRhs.m_ipv6), std::begin(m_ipv6));
 }
 
 Endpoint::Endpoint(uint32_t aNetIPv4, uint16_t aPort)
@@ -62,6 +62,11 @@ bool Endpoint::IsValid() const
     return m_type != kNone;
 }
 
+void Endpoint::SetPort(uint16_t aPort)
+{
+    m_port = aPort;
+}
+
 uint16_t Endpoint::GetPort() const
 {
     return m_port;
@@ -91,7 +96,7 @@ bool Endpoint::ToNetIPv4(uint32_t& aDestination) const
 {
     if (IsIPv4() == false) return false;
 
-    aDestination = m_ipv4[0];
+    aDestination |= uint32_t(m_ipv4[0]);
     aDestination |= uint32_t(m_ipv4[1]) << 8;
     aDestination |= uint32_t(m_ipv4[2]) << 16;
     aDestination |= uint32_t(m_ipv4[3]) << 24;

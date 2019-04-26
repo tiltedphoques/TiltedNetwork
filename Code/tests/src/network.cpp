@@ -6,9 +6,47 @@ TEST_CASE("Networking", "[network]")
 {
     InitializeNetwork();
 
-    Socket sock;
+    GIVEN("A basic socket")
+    {
+        Socket sock;
+        REQUIRE(sock.GetPort() == 0);
+        REQUIRE(sock.Bind() == true);
+        REQUIRE(sock.GetPort() != 0);
+    }
+    GIVEN("Two sockets")
+    {
+        static const std::string testString = "abcdef";
 
-    ShutdownNetwork();
+        Buffer buffer(100);
+
+        Socket client, server;
+        REQUIRE(client.Bind());
+        REQUIRE(server.Bind());
+
+        Endpoint clientEndpoint{ "[::ffff:127.0.0.1]" };
+        Endpoint serverEndpoint{ "[::ffff:127.0.0.1]" };
+        clientEndpoint.SetPort(client.GetPort());
+        serverEndpoint.SetPort(server.GetPort());
+
+        Buffer::Writer writer(&buffer);
+        writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
+
+        Socket::Packet packet{ serverEndpoint, buffer };
+        REQUIRE(client.Send(packet));
+        auto result = server.Receive();
+        REQUIRE(result.HasError() == false);
+        auto data = result.GetResult();
+        REQUIRE(std::memcmp(data.Data.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Origin.IsIPv6());
+
+        // Reply exactly what we got to the client
+        REQUIRE(server.Send(data));
+        result = client.Receive();
+        REQUIRE(result.HasError() == false);
+        data = result.GetResult();
+        REQUIRE(std::memcmp(data.Data.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Origin.IsIPv6());
+    }
 }
 
 TEST_CASE("Endpoint", "[network.endpoint]")

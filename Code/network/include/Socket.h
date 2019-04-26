@@ -27,10 +27,14 @@ public:
 
     Outcome<Packet, Error> Receive();
     bool Send(const Packet& aBuffer);
+    bool Bind(uint16_t aPort = 0);
+
+    uint16_t GetPort() const;
 
 private:
 
     static constexpr size_t MaxPacketSize = 1200;
 
     Socket_t m_sock;
+    uint16_t m_port;
 };

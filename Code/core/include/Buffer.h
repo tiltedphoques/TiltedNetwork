@@ -56,7 +56,7 @@ public:
         ~Writer();
 
         bool WriteBits(uint64_t aData, size_t aCount);
-        bool WriteBytes(uint8_t* apSource, size_t aCount);
+        bool WriteBytes(const uint8_t* apSource, size_t aCount);
     };
 
 private:

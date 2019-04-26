@@ -26,6 +26,7 @@ public:
     bool IsIPv4() const;
     bool IsValid() const;
 
+    void SetPort(uint16_t aPort);
     uint16_t GetPort() const;
     const uint8_t* GetIPv4() const;
     uint8_t* GetIPv4();

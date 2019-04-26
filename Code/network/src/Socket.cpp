@@ -1,8 +1,10 @@
 #include "Socket.h"
+#include <iostream>
 
 Socket::Socket()
 {
-    m_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    m_port = 0;
+    m_sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (m_sock < 0)
         return; // error handling
 }
@@ -51,12 +53,12 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
     if (from.ss_family == AF_INET)
     {
         auto* pAddr = (sockaddr_in*)&from;
-        new (&packet.Origin) Endpoint(pAddr->sin_addr.s_addr, pAddr->sin_port);
+        new (&packet.Origin) Endpoint(pAddr->sin_addr.s_addr, ntohs(pAddr->sin_port));
     }
     else
     {
         auto* pAddr = (sockaddr_in6*)&from;
-        new (&packet.Origin) Endpoint((uint16_t*)&pAddr->sin6_addr, pAddr->sin6_port);
+        new (&packet.Origin) Endpoint((uint16_t*)&pAddr->sin6_addr, ntohs(pAddr->sin6_port));
     }
 
     return std::move(packet);
@@ -71,7 +73,8 @@ bool Socket::Send(const Socket::Packet& acPacket)
         ipv6.sin6_port = htons(acPacket.Origin.GetPort());
         ipv6.sin6_family = AF_INET6;
         acPacket.Origin.ToNetIPv6(ipv6.sin6_addr);
-        sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)&ipv6, sizeof(ipv6));
+        if (sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)& ipv6, sizeof(ipv6)) < 0)
+            return false;
     }
     else
     {
@@ -80,8 +83,44 @@ bool Socket::Send(const Socket::Packet& acPacket)
         ipv4.sin_port = htons(acPacket.Origin.GetPort());
         ipv4.sin_family = AF_INET;
         acPacket.Origin.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
-        sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)& ipv4, sizeof(ipv4));
+
+        char* hello = "hello";
+
+        if (sendto(m_sock, hello, 5, 0, (sockaddr*)&ipv4, sizeof(sockaddr_in6)) < 0)
+            return false; 
     }
 
     return true;
+}
+
+bool Socket::Bind(uint16_t aPort)
+{
+    sockaddr_in6 saddr;
+    std::memset(&saddr, 0, sizeof(saddr));
+    saddr.sin6_family = AF_INET6;
+    saddr.sin6_addr = in6addr_any;
+    saddr.sin6_port = htons(aPort);
+
+    int v6only = 0;
+#ifdef _WIN32
+    if (setsockopt(m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)& v6only, sizeof(v6only)) != 0)
+#else
+    if (setsockopt(m_sock, IPPROTO_IPV6, IPV6_V6ONLY, &v6only, sizeof(v6only)) != 0)
+#endif
+        return false;
+
+    if (bind(m_sock, (sockaddr*)& saddr, sizeof(saddr)) < 0)
+        return false;
+
+    int len = sizeof(saddr);
+    getsockname(m_sock, (sockaddr*)& saddr, &len);
+
+    m_port = ntohs(saddr.sin6_port);
+
+    return true;
+}
+
+uint16_t Socket::GetPort() const
+{
+    return m_port;
 }
