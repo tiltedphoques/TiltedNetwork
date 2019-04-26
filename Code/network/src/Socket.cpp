@@ -16,7 +16,7 @@ Socket::~Socket()
 #endif
 }
 
-Outcome<Buffer, Socket::Error> Socket::Receive()
+Outcome<Socket::Packet, Socket::Error> Socket::Receive()
 {
     Buffer buffer(MaxPacketSize);
 
@@ -47,5 +47,20 @@ Outcome<Buffer, Socket::Error> Socket::Receive()
     }
 #endif
 
-    return std::move(buffer);
+    if (from.ss_family == AF_INET)
+    {
+
+    }
+    else
+    {
+
+    }
+
+    return Packet{ Endpoint{"127.0.0.1"}, std::move(buffer) };
+}
+
+bool Socket::Send(const Socket::Packet& acPacket)
+{
+   // sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, NULL);
+    return true;
 }

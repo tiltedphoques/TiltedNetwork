@@ -3,6 +3,7 @@
 #include "Network.h"
 #include "Outcome.h"
 #include "Buffer.h"
+#include "Endpoint.h"
 
 class Socket
 {
@@ -15,10 +16,17 @@ public:
         kCallFailure
     };
 
+    struct Packet
+    {
+        Endpoint Origin;
+        Buffer Data;
+    };
+
     Socket();
     ~Socket();
 
-    Outcome<Buffer, Error> Receive();
+    Outcome<Packet, Error> Receive();
+    bool Send(const Packet& aBuffer);
 
 private:
 

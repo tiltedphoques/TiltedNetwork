@@ -2,9 +2,9 @@
 
 #include "DHChachaFilter.h"
 
-TEST_CASE("Protocol", "[protocol]")
+TEST_CASE("Protocol DHChaCha", "[protocol.dhchacha]")
 {
-    GIVEN("A chacha filter")
+    GIVEN("Two DHChaCha filters")
     {
         DHChachaFilter clientFilter;
         DHChachaFilter serverFilter;

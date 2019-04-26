@@ -2,6 +2,8 @@
 
 #ifdef _WIN32
 #include <WinSock2.h>
+#include <In6addr.h>
+#include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32")
 #elif __linux__
 #include <unistd.h> 
