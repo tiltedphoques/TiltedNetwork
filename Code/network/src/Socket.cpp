@@ -47,20 +47,41 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
     }
 #endif
 
+    Packet packet{ Endpoint{}, std::move(buffer) };
     if (from.ss_family == AF_INET)
     {
-
+        auto* pAddr = (sockaddr_in*)&from;
+        new (&packet.Origin) Endpoint(pAddr->sin_addr.s_addr, pAddr->sin_port);
     }
     else
     {
-
+        auto* pAddr = (sockaddr_in6*)&from;
+        new (&packet.Origin) Endpoint((uint16_t*)&pAddr->sin6_addr, pAddr->sin6_port);
     }
 
-    return Packet{ Endpoint{"127.0.0.1"}, std::move(buffer) };
+    return std::move(packet);
 }
 
 bool Socket::Send(const Socket::Packet& acPacket)
 {
-   // sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, NULL);
+    if (acPacket.Origin.IsIPv6())
+    {
+        sockaddr_in6 ipv6;
+        std::memset(&ipv6, 0, sizeof(ipv6));
+        ipv6.sin6_port = htons(acPacket.Origin.GetPort());
+        ipv6.sin6_family = AF_INET6;
+        acPacket.Origin.ToNetIPv6(ipv6.sin6_addr);
+        sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)&ipv6, sizeof(ipv6));
+    }
+    else
+    {
+        sockaddr_in ipv4;
+        std::memset(&ipv4, 0, sizeof(ipv4));
+        ipv4.sin_port = htons(acPacket.Origin.GetPort());
+        ipv4.sin_family = AF_INET;
+        acPacket.Origin.ToNetIPv4((uint32_t&)ipv4.sin_addr.s_addr);
+        sendto(m_sock, (const char*)acPacket.Data.GetData(), acPacket.Data.GetSize(), 0, (sockaddr*)& ipv4, sizeof(ipv4));
+    }
+
     return true;
 }

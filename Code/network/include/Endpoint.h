@@ -19,6 +19,8 @@ public:
     Endpoint();
     Endpoint(const std::string& acEndpoint);
     Endpoint(const Endpoint& acRhs);
+    Endpoint(uint32_t aNetIPv4, uint16_t aPort);
+    Endpoint(const uint16_t* acpNetIPv6, uint16_t aPort);
 
     bool IsIPv6() const;
     bool IsIPv4() const;
@@ -29,6 +31,9 @@ public:
     uint8_t* GetIPv4();
     const uint16_t* GetIPv6() const;
     uint16_t* GetIPv6();
+
+    bool ToNetIPv4(uint32_t& aDestination) const;
+    bool ToNetIPv6(in_addr6& aDestination) const;
 
     Endpoint& operator=(const Endpoint& acRhs);
     bool operator==(const Endpoint& acRhs) const;
