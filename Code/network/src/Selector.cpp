@@ -21,7 +21,7 @@ bool Selector::IsReady() const
     tm.tv_usec = 0;
 
 #ifdef _WIN32
-    return select(1, &set, nullptr, nullptr, &tm) == 1;
+    return select(set.fd_count, &set, nullptr, nullptr, &tm) == 1;
 #else
     return select(m_sock + 1, &set, nullptr, nullptr, &tm) == 1;
 #endif

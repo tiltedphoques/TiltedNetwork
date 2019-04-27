@@ -2,6 +2,7 @@
 
 #include "Network.h"
 #include "Outcome.h"
+#include "Meta.h"
 
 #include <string>
 
@@ -9,7 +10,7 @@ class Endpoint
 {
 public:
 
-    enum Type
+    enum Type : uint8_t
     {
         kNone,
         kIPv4,
@@ -51,7 +52,45 @@ private:
         uint8_t m_ipv4[4];
         uint16_t m_ipv6[8];
     };
+
+    friend struct std::hash<Endpoint>;
     
     Type m_type;
     uint16_t m_port;
 };
+
+namespace std
+{
+    template<>
+    struct hash<Endpoint>
+    {
+        typedef Endpoint argument_type;
+        typedef std::size_t result_type;
+
+        result_type operator()(argument_type const& s) const noexcept
+        {
+            result_type result = 0;
+            hash_combine(result, (uint8_t)s.m_type);
+            hash_combine(result, s.m_port);
+
+            result_type tmp = 0;
+            if (s.IsIPv6())
+            {
+                for (auto c : s.m_ipv6)
+                {
+                    tmp = tmp * 31 + std::hash<uint16_t>()(c);
+                }
+            }
+            else if (s.IsIPv4())
+            {
+                for (auto c : s.m_ipv4)
+                {
+                    tmp = tmp * 31 + std::hash<uint8_t>()(c);
+                }
+            }
+            hash_combine(result, tmp);
+
+            return result;
+        }
+    };
+}

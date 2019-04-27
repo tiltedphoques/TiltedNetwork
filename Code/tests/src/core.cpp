@@ -331,7 +331,7 @@ TEST_CASE("Buffers", "[core.buffer]")
             REQUIRE(writer.GetBytePosition() == 0);
             REQUIRE(writer.Eof() == false);
 
-            char* testData = "atest";
+            const char* testData = "atest";
             writer.WriteBytes((uint8_t*)testData, 1);
 
             REQUIRE(writer.GetBitPosition() == 8);

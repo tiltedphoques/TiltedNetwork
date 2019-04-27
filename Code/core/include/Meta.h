@@ -4,6 +4,8 @@
 #include <type_traits>
 #include <utility>
 #include <cstddef>
+#include <functional>
+
 
 using std::size_t;
 
@@ -37,4 +39,10 @@ namespace details
 
     template< template<class...> class Op, class... Args >
     constexpr bool is_detected_v = is_detected<Op, Args...>::value;
+}
+
+template<class T>
+void hash_combine(size_t& aSeed, const T& aValue)
+{
+    aSeed ^= std::hash<T>()(aValue) + 0x9e3779b9 + (aSeed << 6) + (aSeed >> 2);
 }

@@ -1,6 +1,7 @@
 #include "catch.hpp"
 
 #include "Socket.h"
+#include "Server.h"
 #include "Selector.h"
 
 #include <cstring>
@@ -43,9 +44,11 @@ TEST_CASE("Networking", "[network]")
         writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
 
         Socket::Packet packet{ serverEndpoint, buffer };
+
+        REQUIRE(serverSelector.IsReady() == false);
+
         REQUIRE(client.Send(packet));
    
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         // Now the server should have available data
         REQUIRE(serverSelector.IsReady());
 
@@ -62,6 +65,25 @@ TEST_CASE("Networking", "[network]")
         data = result.GetResult();
         REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
         REQUIRE(data.Remote.IsIPv6());
+    }
+    GIVEN("A client server model")
+    {
+        Buffer buffer(100);
+
+        Server server;
+        server.Start(0);
+
+        REQUIRE(server.GetPort() != 0);
+        Endpoint serverEndpoint{ "[::ffff:127.0.0.1]" };
+        serverEndpoint.SetPort(server.GetPort());
+
+        Socket client;
+        client.Bind();
+
+        Socket::Packet packet{ serverEndpoint, buffer };
+        client.Send(packet);
+
+        REQUIRE(server.Update(1) == 1);
     }
 }
 

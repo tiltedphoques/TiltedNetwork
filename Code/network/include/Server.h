@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Socket.h"
+#include "ConnectionManager.h"
 
-class Server
+class Server : public AllocatorCompatible
 {
 public:
 
@@ -10,11 +11,17 @@ public:
     ~Server();
 
     bool Start(uint16_t aPort);
-    void Update(uint64_t aElapsedMilliSeconds);
+    uint32_t Update(uint64_t aElapsedMilliSeconds);
+    uint16_t GetPort() const;
+
+protected:
+
+    bool ProcessPacket(Socket::Packet& aPacket);
 
 private:
 
-    void Work();
+    uint32_t Work();
 
     Socket m_listener;
+    ConnectionManager m_connectionManager;
 };
