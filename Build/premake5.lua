@@ -13,7 +13,7 @@ workspace ("DestroyerOfWorlds")
     
     staticruntime "On"
     floatingpoint "Fast"
-    vectorextensions "AVX2"
+    vectorextensions "SSE2"
     warnings "Extra"
     
     cppdialect "C++17"

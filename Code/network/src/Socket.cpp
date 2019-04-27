@@ -1,12 +1,30 @@
 #include "Socket.h"
 #include <cstring>
 
-Socket::Socket()
+Socket::Socket(bool aBlocking)
 {
     m_port = 0;
     m_sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (m_sock < 0)
         return; // error handling
+
+    int on = 1;
+#ifdef _WIN32
+    if (setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) != 0)
+#else
+    if (setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0)
+#endif
+        return;
+
+    if (aBlocking == false)
+    {
+#ifdef _WIN32
+        if (ioctlsocket(m_sock, FIONBIO, (u_long*)& on) != 0)
+#else
+        if (ioctl(m_sock, FIONBIO, (char*)&on) != 0)
+#endif
+            return;
+    }
 }
 
 Socket::~Socket()

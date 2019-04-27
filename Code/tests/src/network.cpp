@@ -1,8 +1,10 @@
 #include "catch.hpp"
 
 #include "Socket.h"
+#include "Selector.h"
 
 #include <cstring>
+#include <thread>
 
 
 TEST_CASE("Networking", "[network]")
@@ -26,6 +28,12 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(client.Bind());
         REQUIRE(server.Bind());
 
+        Selector clientSelector(client);
+        Selector serverSelector(server);
+
+        REQUIRE(clientSelector.IsReady() == false);
+        REQUIRE(serverSelector.IsReady() == false);
+
         Endpoint clientEndpoint{ "[::ffff:127.0.0.1]" };
         Endpoint serverEndpoint{ "[::ffff:127.0.0.1]" };
         clientEndpoint.SetPort(client.GetPort());
@@ -36,6 +44,11 @@ TEST_CASE("Networking", "[network]")
 
         Socket::Packet packet{ serverEndpoint, buffer };
         REQUIRE(client.Send(packet));
+   
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // Now the server should have available data
+        REQUIRE(serverSelector.IsReady());
+
         auto result = server.Receive();
         REQUIRE(result.HasError() == false);
         auto data = result.GetResult();

@@ -22,7 +22,7 @@ public:
         Buffer Payload;
     };
 
-    Socket();
+    Socket(bool aBlocking = true);
     ~Socket();
 
     Outcome<Packet, Error> Receive();
@@ -32,6 +32,8 @@ public:
     uint16_t GetPort() const;
 
 private:
+
+    friend class Selector;
 
     static constexpr size_t MaxPacketSize = 1200;
 
