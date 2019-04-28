@@ -79,8 +79,8 @@ uint8_t* Buffer::GetWriteData()
 }
 
 Buffer::Cursor::Cursor(Buffer* apBuffer)
-    : m_pBuffer(apBuffer)
-    , m_bitPosition(0)
+    : m_bitPosition(0)
+    , m_pBuffer(apBuffer)
 {
 
 }
@@ -130,7 +130,7 @@ bool Buffer::Reader::ReadBits(uint64_t& aDestination, size_t aCount)
 
     // Number of bits to read in the current byte
     auto bitIndex = m_bitPosition & 0x7;
-    auto bitsToRead = 0;
+    size_t bitsToRead = 0;
 
     auto countOffset = aCount + bitIndex;
     // Compute how many bytes we will end up reading
@@ -150,7 +150,6 @@ bool Buffer::Reader::ReadBits(uint64_t& aDestination, size_t aCount)
 
         // If we are requesting less bits that what is available
         bitsToRead = bitsToRead > aCount ? aCount : bitsToRead;
-
 
         endBits = ((*pLocation) >> bitIndex) & ((1 << bitsToRead) - 1);
 
@@ -201,7 +200,7 @@ bool Buffer::Writer::WriteBits(uint64_t aData, size_t aCount)
 {
     // Number of bits to write in the current byte
     auto bitIndex = m_bitPosition & 0x7;
-    auto bitsToWrite = 0;
+    size_t bitsToWrite = 0;
 
     // Compute how many bytes we will end up writing
     auto bytesToWrite = ((aCount & ~0x7) + ((aCount & 0x7) != 0 ? 8 : 0)) >> 3;
