@@ -290,10 +290,9 @@ TEST_CASE("Buffers", "[core.buffer]")
 
     GIVEN("Views")
     {
-        Buffer buffer(100);
-
         WHEN("Using a cursor")
         {
+            Buffer buffer(100);
             Buffer::Cursor cursor(&buffer);
 
             REQUIRE(cursor.GetBitPosition() == 0);
@@ -368,7 +367,49 @@ TEST_CASE("Buffers", "[core.buffer]")
                 REQUIRE(memcmp(testData, rawBuffer, 5) == 0);
             }
         }
+        WHEN("Using bits accessors")
+        {
+            Buffer buffer(100);
+            Buffer::Writer writer(&buffer);
 
+            const uint8_t test = 0xE4;
+            const uint64_t test64 = 0x123456789ABCDEFULL;
+
+            writer.WriteBytes(&test, 1);
+            writer.WriteBytes((uint8_t*)&test64, 8);
+
+            {
+                uint64_t dest = 0;
+
+                Buffer::Reader reader(&buffer);
+                reader.ReadBits(dest, 8);
+
+                REQUIRE(dest == test);
+            }
+
+            
+            {
+                uint64_t dest = 0;
+
+                Buffer::Reader reader(&buffer);
+                reader.ReadBits(dest, 4);
+
+                REQUIRE(dest == 0x4);
+
+                reader.ReadBits(dest, 4);
+
+                REQUIRE(dest == 0xE);
+
+                reader.ReadBits(dest, 4);
+
+                REQUIRE(dest == 0xF);
+
+                reader.ReadBits(dest, 12);
+
+                REQUIRE(dest == 0xCDE);
+            }
+            
+        }
     }
 
     REQUIRE(tracker.GetUsedMemory() == 0);

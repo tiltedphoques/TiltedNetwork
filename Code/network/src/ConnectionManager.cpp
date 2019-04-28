@@ -32,3 +32,13 @@ bool ConnectionManager::IsFull() const
 {
     return m_connections.size() >= m_maxConnections;
 }
+
+void ConnectionManager::Add(const Endpoint& acEndpoint, Buffer* apConnectionPayload)
+{
+    Connection connection;
+   
+    if (connection.ProcessNegociation(apConnectionPayload))
+    {
+        m_connections[acEndpoint] = std::move(connection);
+    }
+}

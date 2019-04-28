@@ -13,6 +13,8 @@ public:
     Connection* Find(const Endpoint& acEndpoint);
     const Connection* Find(const Endpoint& acEndpoint) const;
 
+    void Add(const Endpoint& acEndpoint, Buffer* apConnectionPayload);
+
     bool IsFull() const;
 
 private:

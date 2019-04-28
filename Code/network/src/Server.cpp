@@ -31,13 +31,14 @@ bool Server::ProcessPacket(Socket::Packet& aPacket)
     auto pConnection = m_connectionManager.Find(aPacket.Remote);
     if (pConnection)
     {
-        // pConnection->ProcessPacket(aPacket.Payload);
+        m_connectionManager.Add(aPacket.Remote, &aPacket.Payload);
 
         return true;
     }
     else if(m_connectionManager.IsFull() == false)
     {
         // New connection
+
 
         return true;
     }

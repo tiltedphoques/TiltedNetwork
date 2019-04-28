@@ -126,11 +126,54 @@ Buffer::Reader::Reader(Buffer* apBuffer)
 
 bool Buffer::Reader::ReadBits(uint64_t& aDestination, size_t aCount)
 {
-    return false;
+    aDestination = 0;
+
+    // Number of bits to read in the current byte
+    auto bitIndex = m_bitPosition & 0x7;
+    auto bitsToRead = 0;
+
+    // Compute how many bytes we will end up reading
+    auto bytesToRead = ((aCount & ~0x7) + ((aCount & 0x7) != 0 ? 8 : 0)) >> 3;
+    if (bytesToRead + GetBytePosition() > m_pBuffer->GetSize())
+    {
+        return false;
+    }
+
+    uint64_t endBits = 0;
+
+    auto* pLocation = m_pBuffer->GetData() + GetBytePosition();
+
+    if (bitIndex != 0)
+    {
+        bitsToRead = 8 - bitIndex;
+
+        // If we are requesting less bits that what is available
+        bitsToRead = bitsToRead > aCount ? aCount : bitsToRead;
+
+
+        endBits = ((*pLocation) >> bitIndex) & ((1 << bitsToRead) - 1);
+
+        pLocation++;
+        bytesToRead--;
+    }
+    else
+        bitIndex = 0;
+
+    std::copy(pLocation, pLocation + bytesToRead, (uint8_t*)& aDestination);
+    aDestination <<= bitsToRead;
+    aDestination |= endBits;
+    aDestination &= ((uint64_t(1) << aCount) - 1);
+
+    m_bitPosition += aCount;
+
+    return true;
 }
 
 bool Buffer::Reader::ReadBytes(uint8_t* apDestination, size_t aCount)
 {
+    // Fix m_bitPosition to be at the start of the next full byte
+    m_bitPosition = (m_bitPosition & ~0x7) + ((m_bitPosition & 0x7) != 0 ? 8 : 0);
+
     if (aCount + GetBytePosition() <= m_pBuffer->GetSize())
     {
         std::copy(m_pBuffer->GetData() + GetBytePosition(), m_pBuffer->GetData() + GetBytePosition() + aCount, apDestination);
