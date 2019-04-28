@@ -132,8 +132,9 @@ bool Buffer::Reader::ReadBits(uint64_t& aDestination, size_t aCount)
     auto bitIndex = m_bitPosition & 0x7;
     auto bitsToRead = 0;
 
+    auto countOffset = aCount + bitIndex;
     // Compute how many bytes we will end up reading
-    auto bytesToRead = ((aCount & ~0x7) + ((aCount & 0x7) != 0 ? 8 : 0)) >> 3;
+    auto bytesToRead = ((countOffset & ~0x7) + ((countOffset & 0x7) != 0 ? 8 : 0)) >> 3;
     if (bytesToRead + GetBytePosition() > m_pBuffer->GetSize())
     {
         return false;
@@ -198,7 +199,50 @@ Buffer::Writer::~Writer()
 
 bool Buffer::Writer::WriteBits(uint64_t aData, size_t aCount)
 {
-    return false;
+    // Number of bits to write in the current byte
+    auto bitIndex = m_bitPosition & 0x7;
+    auto bitsToWrite = 0;
+
+    // Compute how many bytes we will end up writing
+    auto bytesToWrite = ((aCount & ~0x7) + ((aCount & 0x7) != 0 ? 8 : 0)) >> 3;
+
+    if (bytesToWrite + GetBytePosition() > m_pBuffer->GetSize())
+    {
+        return false;
+    }
+
+    auto* pLocation = m_pBuffer->GetWriteData() + GetBytePosition();
+
+    if (bitIndex != 0)
+    {
+        bitsToWrite = 8 - bitIndex;
+
+        // If we are requesting less bits that what is available
+        bitsToWrite = bitsToWrite > aCount ? aCount : bitsToWrite;
+
+        // Select the data we want to keep
+        auto workByte = *pLocation;
+        auto workByteMask = ((1 << bitIndex) - 1);
+        workByte &= workByteMask;
+
+        // Write the part we want
+        *pLocation = ((uint8_t)(aData & 0xFF) & ((1 << bitsToWrite) - 1)) << bitIndex;
+        *pLocation |= workByte;
+
+        pLocation++;
+        bytesToWrite--;
+
+        aData >>= bitsToWrite;
+    }
+    else
+        bitIndex = 0;
+
+    uint8_t* pDirectAccess = (uint8_t*)&aData;
+    std::copy(pDirectAccess, pDirectAccess + bytesToWrite, pLocation);
+
+    m_bitPosition += aCount;
+
+    return true;
 }
 
 bool Buffer::Writer::WriteBytes(const uint8_t* apSource, size_t aCount)

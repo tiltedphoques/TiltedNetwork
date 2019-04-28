@@ -409,6 +409,34 @@ TEST_CASE("Buffers", "[core.buffer]")
                 REQUIRE(dest == 0xCDE);
             }
             
+            writer.Reset();
+            for (auto i = 0; i < 8; ++i)
+            {
+                writer.WriteBits(1, 1);
+                writer.WriteBits(0, 1);
+            }
+            writer.WriteBits(1, 3);
+            writer.WriteBits(0x28FE, 16);
+            
+            {
+                uint64_t dest = 0;
+                Buffer::Reader reader(&buffer);
+
+                for (auto i = 0; i < 8; ++i)
+                {
+                    reader.ReadBits(dest, 1);
+                    REQUIRE(dest == 1);
+
+                    reader.ReadBits(dest, 1);
+                    REQUIRE(dest == 0);
+                }
+
+                reader.ReadBits(dest, 3);
+                REQUIRE(dest == 1);
+
+                reader.ReadBits(dest, 16);
+                REQUIRE(dest == 0x28FE);
+            }
         }
     }
 
