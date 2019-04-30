@@ -3,6 +3,8 @@
 
 Server::Server()
     : m_connectionManager(64)
+    , m_v4Listener(Endpoint::kIPv4)
+    , m_v6Listener(Endpoint::kIPv6)
 {
 
 }
@@ -17,7 +19,7 @@ bool Server::Start(uint16_t aPort)
     {
         return false;
     }
-    return m_v6Listener.Bind(aPort);
+    return m_v6Listener.Bind(m_v4Listener.GetPort());
 }
 
 uint32_t Server::Update(uint64_t aElapsedMilliSeconds)
@@ -74,7 +76,7 @@ uint32_t Server::Work()
     }
 
     Selector selectorv6(m_v6Listener);
-    while (selector.IsReady())
+    while (selectorv6.IsReady())
     {
         auto result = m_v6Listener.Receive();
         if (result.HasError())

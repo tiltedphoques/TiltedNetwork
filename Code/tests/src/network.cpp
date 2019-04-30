@@ -19,7 +19,54 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(sock.Bind() == true);
         REQUIRE(sock.GetPort() != 0);
     }
-    GIVEN("Two sockets")
+    GIVEN("Two sockets v4")
+    {
+        static const std::string testString = "abcdef";
+
+        Buffer buffer(100);
+
+        Socket client(Endpoint::kIPv4), server(Endpoint::kIPv4);
+        REQUIRE(client.Bind());
+        REQUIRE(server.Bind());
+
+        Selector clientSelector(client);
+        Selector serverSelector(server);
+
+        REQUIRE(clientSelector.IsReady() == false);
+        REQUIRE(serverSelector.IsReady() == false);
+
+        Endpoint clientEndpoint{ "127.0.0.1" };
+        Endpoint serverEndpoint{ "127.0.0.1" };
+        clientEndpoint.SetPort(client.GetPort());
+        serverEndpoint.SetPort(server.GetPort());
+
+        Buffer::Writer writer(&buffer);
+        writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
+
+        Socket::Packet packet{ serverEndpoint, buffer };
+
+        REQUIRE(serverSelector.IsReady() == false);
+
+        REQUIRE(client.Send(packet));
+
+        // Now the server should have available data
+        REQUIRE(serverSelector.IsReady());
+
+        auto result = server.Receive();
+        REQUIRE(result.HasError() == false);
+        auto data = result.GetResult();
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Remote.IsIPv4());
+
+        // Reply exactly what we got to the client
+        REQUIRE(server.Send(data));
+        result = client.Receive();
+        REQUIRE(result.HasError() == false);
+        data = result.GetResult();
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Remote.IsIPv4());
+    }
+    GIVEN("Two sockets v6")
     {
         static const std::string testString = "abcdef";
 
@@ -48,7 +95,7 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(serverSelector.IsReady() == false);
 
         REQUIRE(client.Send(packet));
-   
+
         // Now the server should have available data
         REQUIRE(serverSelector.IsReady());
 
@@ -66,22 +113,36 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
         REQUIRE(data.Remote.IsIPv6());
     }
+
     GIVEN("A client server model")
     {
         Buffer buffer(100);
 
         Server server;
-        server.Start(0);
+        REQUIRE(server.Start(0));
 
         REQUIRE(server.GetPort() != 0);
-        Endpoint serverEndpoint{ "[::1]" };
-        serverEndpoint.SetPort(server.GetPort());
 
-        Socket client;
-        client.Bind();
+        Endpoint serverEndpointv6{ "[::1]" };
+        Endpoint serverEndpointv4{ "127.0.0.1" };
 
-        Socket::Packet packet{ serverEndpoint, buffer };
-        client.Send(packet);
+        serverEndpointv6.SetPort(server.GetPort());
+        serverEndpointv4.SetPort(server.GetPort());
+
+        Socket clientv6(Endpoint::kIPv6);
+        Socket clientv4(Endpoint::kIPv4);
+
+        clientv6.Bind();
+        clientv4.Bind();
+
+        Socket::Packet packetv6{ serverEndpointv6, buffer };
+        Socket::Packet packetv4{ serverEndpointv4, buffer };
+
+        REQUIRE(clientv6.Send(packetv6));
+
+        REQUIRE(server.Update(1) == 1);
+
+        REQUIRE(clientv4.Send(packetv4));
 
         REQUIRE(server.Update(1) == 1);
     }
