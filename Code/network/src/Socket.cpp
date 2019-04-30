@@ -1,16 +1,17 @@
 #include "Socket.h"
 #include <cstring>
 
-Socket::Socket(bool aBlocking)
+Socket::Socket(Endpoint::Type aEndpointType, bool aBlocking)
+    : m_type{aEndpointType}
 {
     m_port = 0;
-    m_sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    m_sock = socket(aEndpointType == Endpoint::kIPv6 ? AF_INET6 : AF_INET, SOCK_DGRAM, 0);
     if (m_sock < 0)
         return; // error handling
 
     int on = 1;
 #ifdef _WIN32
-    if (setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) != 0)
+    if (setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)& on, sizeof(on)) != 0)
 #else
     if (setsockopt(m_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0)
 #endif
@@ -84,7 +85,10 @@ Outcome<Socket::Packet, Socket::Error> Socket::Receive()
 
 bool Socket::Send(const Socket::Packet& acPacket)
 {
-    if (acPacket.Remote.IsIPv6())
+    if (acPacket.Remote.GetType() != m_type)
+        return false;
+
+    if (m_type == Endpoint::kIPv6)
     {
         sockaddr_in6 ipv6;
         std::memset(&ipv6, 0, sizeof(ipv6));
@@ -112,19 +116,28 @@ bool Socket::Send(const Socket::Packet& acPacket)
 
 bool Socket::Bind(uint16_t aPort)
 {
+    if (m_type == Endpoint::kIPv6)
+        return Bindv6(aPort);
+
+    return Bindv4(aPort);
+}
+
+bool Socket::Bindv6(uint16_t aPort)
+{
     sockaddr_in6 saddr;
     std::memset(&saddr, 0, sizeof(saddr));
     saddr.sin6_family = AF_INET6;
     saddr.sin6_addr = in6addr_any;
     saddr.sin6_port = htons(aPort);
 
-    int v6only = 0;
+    int v6only = 1;
 #ifdef _WIN32
     if (setsockopt(m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)& v6only, sizeof(v6only)) != 0)
 #else
     if (setsockopt(m_sock, IPPROTO_IPV6, IPV6_V6ONLY, &v6only, sizeof(v6only)) != 0)
 #endif
         return false;
+
 
     if (bind(m_sock, (sockaddr*)& saddr, sizeof(saddr)) < 0)
         return false;
@@ -136,6 +149,28 @@ bool Socket::Bind(uint16_t aPort)
     getsockname(m_sock, (sockaddr*)& saddr, &len);
 
     m_port = ntohs(saddr.sin6_port);
+
+    return true;
+}
+
+bool Socket::Bindv4(uint16_t aPort)
+{
+    sockaddr_in saddr;
+    std::memset(&saddr, 0, sizeof(saddr));
+    saddr.sin_family = AF_INET;
+    saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    saddr.sin_port = htons(aPort);
+
+    if (bind(m_sock, (sockaddr*)& saddr, sizeof(saddr)) < 0)
+        return false;
+
+#ifdef _WIN32
+    using socklen_t = int;
+#endif
+    socklen_t len = sizeof(saddr);
+    getsockname(m_sock, (sockaddr*)& saddr, &len);
+
+    m_port = ntohs(saddr.sin_port);
 
     return true;
 }

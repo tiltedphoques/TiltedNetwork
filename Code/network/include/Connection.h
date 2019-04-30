@@ -1,16 +1,32 @@
 #pragma once
 
 #include "Buffer.h"
+#include "Outcome.h"
+
 
 class Connection
 {
 public:
+
+    struct Header
+    {
+        char Signature[2];
+        uint64_t Type;
+        uint64_t Length;
+    };
 
     enum State
     {
         kNone,
         kNegociating,
         kConnected
+    };
+
+    enum HeaderErrors
+    {
+        kBadSignature,
+        kTooLarge,
+        kUnknownChannel
     };
 
     Connection();
@@ -23,7 +39,7 @@ public:
 
 protected:
 
-    void ProcessHeader(Buffer::Reader& aReader);
+    Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
 
 private:
 

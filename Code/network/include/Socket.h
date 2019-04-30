@@ -22,7 +22,7 @@ public:
         Buffer Payload;
     };
 
-    Socket(bool aBlocking = true);
+    Socket(Endpoint::Type aEndpointType = Endpoint::kIPv6, bool aBlocking = true);
     ~Socket();
 
     Outcome<Packet, Error> Receive();
@@ -30,6 +30,11 @@ public:
     bool Bind(uint16_t aPort = 0);
 
     uint16_t GetPort() const;
+
+protected:
+
+    bool Bindv6(uint16_t aPort);
+    bool Bindv4(uint16_t aPort);
 
 private:
 
@@ -39,4 +44,5 @@ private:
 
     Socket_t m_sock;
     uint16_t m_port;
+    Endpoint::Type m_type;
 };

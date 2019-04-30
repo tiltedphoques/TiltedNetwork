@@ -1,6 +1,7 @@
 #include "Endpoint.h"
 #include "Network.h"
 #include <cstring>
+#include "..\include\Endpoint.h"
 
 Endpoint::Endpoint()
 {
@@ -60,6 +61,11 @@ bool Endpoint::IsIPv6() const
 bool Endpoint::IsValid() const
 {
     return m_type != kNone;
+}
+
+Endpoint::Type Endpoint::GetType() const
+{
+    return m_type;
 }
 
 void Endpoint::SetPort(uint16_t aPort)

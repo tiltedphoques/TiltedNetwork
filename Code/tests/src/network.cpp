@@ -35,8 +35,8 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(clientSelector.IsReady() == false);
         REQUIRE(serverSelector.IsReady() == false);
 
-        Endpoint clientEndpoint{ "[::ffff:127.0.0.1]" };
-        Endpoint serverEndpoint{ "[::ffff:127.0.0.1]" };
+        Endpoint clientEndpoint{ "[::1]" };
+        Endpoint serverEndpoint{ "[::1]" };
         clientEndpoint.SetPort(client.GetPort());
         serverEndpoint.SetPort(server.GetPort());
 
@@ -74,7 +74,7 @@ TEST_CASE("Networking", "[network]")
         server.Start(0);
 
         REQUIRE(server.GetPort() != 0);
-        Endpoint serverEndpoint{ "[::ffff:127.0.0.1]" };
+        Endpoint serverEndpoint{ "[::1]" };
         serverEndpoint.SetPort(server.GetPort());
 
         Socket client;

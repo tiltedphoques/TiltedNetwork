@@ -22,6 +22,6 @@ private:
 
     uint32_t Work();
 
-    Socket m_listener;
+    Socket m_v4Listener, m_v6Listener;
     ConnectionManager m_connectionManager;
 };

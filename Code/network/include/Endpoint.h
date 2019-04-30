@@ -26,6 +26,7 @@ public:
     bool IsIPv6() const;
     bool IsIPv4() const;
     bool IsValid() const;
+    Type GetType() const;
 
     void SetPort(uint16_t aPort);
     uint16_t GetPort() const;

@@ -37,13 +37,14 @@ bool Connection::IsConnected() const
     return m_state == kConnected;
 }
 
-void Connection::ProcessHeader(Buffer::Reader& aReader)
+Outcome<Connection::Header, Connection::HeaderErrors> Connection::ProcessHeader(Buffer::Reader& aReader)
 {
-    uint8_t signature[2];
-    aReader.ReadBytes(signature, 2);
+    Header header;
 
-    if (signature[0] != 'M' || signature[1] != 'G')
-        return;
+    aReader.ReadBytes((uint8_t*)&header.Signature, 2);
+
+    if (header.Signature[0] != 'M' || header.Signature[1] != 'G')
+        return kBadSignature;
 
     uint64_t packetType = 0;
     aReader.ReadBits(packetType, 4);
