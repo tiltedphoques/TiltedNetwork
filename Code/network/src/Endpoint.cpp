@@ -1,7 +1,6 @@
 #include "Endpoint.h"
 #include "Network.h"
 #include <cstring>
-#include "..\include\Endpoint.h"
 
 Endpoint::Endpoint()
 {
