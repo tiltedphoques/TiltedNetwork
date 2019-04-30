@@ -145,6 +145,11 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(clientv4.Send(packetv4));
 
         REQUIRE(server.Update(1) == 1);
+
+        REQUIRE(clientv6.Send(packetv6));
+        REQUIRE(clientv4.Send(packetv4));
+
+        REQUIRE(server.Update(1) == 2);
     }
 }
 
