@@ -28,7 +28,7 @@ Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& 
 }
 
 Connection::Connection(Connection&& aRhs) noexcept
-    : m_communication{std::move(aRhs.m_communication)}
+    : m_communication{aRhs.m_communication}
     , m_state{std::move(aRhs.m_state)}
     , m_timeSinceLastEvent{std::move(aRhs.m_timeSinceLastEvent)}
     , m_remoteEndpoint{std::move(aRhs.m_remoteEndpoint)}
@@ -76,6 +76,9 @@ bool Connection::ProcessNegociation(Buffer* apBuffer)
     auto header = ProcessHeader(reader);
     if (header.HasError())
         return false;
+
+    if (m_filter.ReceiveConnect(&reader))
+        m_state = kConnected;
 
     return IsNegotiating() || IsConnected();
 }
@@ -142,6 +145,8 @@ void Connection::SendNegotiation()
     writer.WriteBits(header.Version, 6);
     writer.WriteBits(header.Type, 3);
     writer.WriteBits(header.Length, 11);
+
+    m_filter.PreConnect(&writer);
 
     m_communication.Send(m_remoteEndpoint, *pBuffer);
 

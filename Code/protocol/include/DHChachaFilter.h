@@ -25,6 +25,8 @@ public:
 
 private:
 
+    void GenerateKeys();
+
     DHChachaFilterPimpl* m_pPimpl;
     std::array<uint8_t, 20> m_iv;
 };

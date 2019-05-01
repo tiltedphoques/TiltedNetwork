@@ -3,6 +3,7 @@
 #include "Buffer.h"
 #include "Outcome.h"
 #include "Endpoint.h"
+#include "DHChachaFilter.h"
 
 class Socket;
 class Connection
@@ -77,4 +78,5 @@ private:
     State m_state;
     uint64_t m_timeSinceLastEvent;
     Endpoint m_remoteEndpoint;
+    DHChachaFilter m_filter;
 };

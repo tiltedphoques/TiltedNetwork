@@ -90,6 +90,7 @@ workspace ("DestroyerOfWorlds")
             {
                 "../Code/core/include/",
                 "../Code/network/include/",
+                "../Code/protocol/include/",
             }
 
             files

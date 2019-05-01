@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Allocator.h"
+#include <memory>
 
 template <size_t Bytes>
 class StackAllocator : public Allocator

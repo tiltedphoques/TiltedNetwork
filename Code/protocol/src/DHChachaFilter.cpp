@@ -44,6 +44,8 @@ DHChachaFilter::DHChachaFilter()
 
     m_pPimpl->m_priKey.resize(m_pPimpl->m_dh.PrivateKeyLength());
     m_pPimpl->m_pubKey.resize(m_pPimpl->m_dh.PublicKeyLength());
+
+    GenerateKeys();
 }
 
 DHChachaFilter::~DHChachaFilter()
@@ -53,10 +55,6 @@ DHChachaFilter::~DHChachaFilter()
 
 bool DHChachaFilter::PreConnect(Buffer::Writer* apBuffer)
 {
-    CryptoPP::AutoSeededRandomPool rng;
-
-    m_pPimpl->m_dh.GenerateKeyPair(rng, m_pPimpl->m_priKey, m_pPimpl->m_pubKey);
-
     return apBuffer->WriteBytes(m_pPimpl->m_pubKey.BytePtr(), m_pPimpl->m_pubKey.SizeInBytes());
 }
 
@@ -111,4 +109,11 @@ bool DHChachaFilter::PreReceive(uint8_t* apPayload, size_t aLength, uint32_t aSe
     m_pPimpl->m_cipher.ProcessData(apPayload, apPayload, aLength);
 
     return true;
+}
+
+void DHChachaFilter::GenerateKeys()
+{
+    CryptoPP::AutoSeededRandomPool rng;
+
+    m_pPimpl->m_dh.GenerateKeyPair(rng, m_pPimpl->m_priKey, m_pPimpl->m_pubKey);
 }

@@ -177,6 +177,7 @@ TEST_CASE("Connection", "[network.connection]")
         DummyCommunication comm;
 
         Connection connection(comm, remoteEndpoint);
+        Connection connection2(comm, remoteEndpoint);
         REQUIRE(connection.IsNegotiating());
 
         connection.Update(1);
@@ -185,7 +186,7 @@ TEST_CASE("Connection", "[network.connection]")
         REQUIRE(buffer.GetData()[0] == 'M');
         REQUIRE(buffer.GetData()[1] == 'G');
 
-        REQUIRE(connection.ProcessNegociation(&buffer));
+        REQUIRE(connection2.ProcessNegociation(&buffer));
     }
 }
 

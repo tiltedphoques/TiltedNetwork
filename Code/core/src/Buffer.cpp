@@ -255,6 +255,9 @@ bool Buffer::Writer::WriteBits(uint64_t aData, size_t aCount)
 
 bool Buffer::Writer::WriteBytes(const uint8_t* apSource, size_t aCount)
 {
+    // Fix m_bitPosition to be at the start of the next full byte
+    m_bitPosition = (m_bitPosition & ~0x7) + ((m_bitPosition & 0x7) != 0 ? 8 : 0);
+
     if (aCount + GetBytePosition() <= m_pBuffer->GetSize())
     {
         std::copy(apSource, apSource + aCount, m_pBuffer->GetWriteData() + GetBytePosition());
