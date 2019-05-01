@@ -1,5 +1,7 @@
 #include "ConnectionManager.h"
 
+
+
 ConnectionManager::ConnectionManager(size_t aMaxConnections)
     : m_maxConnections(aMaxConnections)
 {
@@ -33,12 +35,17 @@ bool ConnectionManager::IsFull() const
     return m_connections.size() >= m_maxConnections;
 }
 
-void ConnectionManager::Add(const Endpoint& acEndpoint, Buffer* apConnectionPayload)
+void ConnectionManager::Update(uint64_t aElapsedMilliSeconds)
 {
-    Connection connection;
-   
-    if (connection.ProcessNegociation(apConnectionPayload))
+    for (auto& kvp : m_connections)
     {
-        m_connections[acEndpoint] = std::move(connection);
+        auto& connection = kvp.second;
+
+        connection.Update(aElapsedMilliSeconds);
     }
+}
+
+void ConnectionManager::Add(Connection aConnection)
+{
+    m_connections.emplace(aConnection.GetRemoteEndpoint(), std::move(aConnection));
 }

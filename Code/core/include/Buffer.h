@@ -10,14 +10,14 @@ public:
     Buffer();
     Buffer(size_t aSize);
     Buffer(const Buffer& acBuffer);
-    Buffer(Buffer&& aBuffer);
+    Buffer(Buffer&& aBuffer) noexcept;
     virtual ~Buffer();
 
     uint8_t operator[](size_t aIndex) const;
     uint8_t& operator[](size_t aIndex);
 
     Buffer& operator=(const Buffer& acBuffer);
-    Buffer& operator=(Buffer&& aBuffer);
+    Buffer& operator=(Buffer&& aBuffer) noexcept;
 
     size_t GetSize() const;
 

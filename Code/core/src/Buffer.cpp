@@ -24,10 +24,13 @@ Buffer::Buffer(const Buffer& acBuffer)
         std::copy(acBuffer.GetData(), acBuffer.GetData() + m_size, m_pData);
 }
 
-Buffer::Buffer(Buffer&& aBuffer)
-    : m_pData(std::move(aBuffer.m_pData))
-    , m_size(std::move(aBuffer.m_size))
+Buffer::Buffer(Buffer&& aBuffer) noexcept
 {
+    SetAllocator(aBuffer.GetAllocator());
+
+    m_pData = aBuffer.m_pData;
+    m_size = aBuffer.m_size;
+
     aBuffer.m_pData = nullptr;
     aBuffer.m_size = 0;
 }
@@ -55,10 +58,15 @@ Buffer& Buffer::operator=(const Buffer& acBuffer)
     return *this;
 }
 
-Buffer& Buffer::operator=(Buffer&& aBuffer)
+Buffer& Buffer::operator=(Buffer&& aBuffer) noexcept
 {
     std::swap(aBuffer.m_pData, m_pData);
     std::swap(aBuffer.m_size, m_size);
+
+    // Swap allocators
+    auto pAllocator = GetAllocator();
+    SetAllocator(aBuffer.GetAllocator());
+    aBuffer.SetAllocator(pAllocator);
 
     return *this;
 }
@@ -202,8 +210,9 @@ bool Buffer::Writer::WriteBits(uint64_t aData, size_t aCount)
     auto bitIndex = m_bitPosition & 0x7;
     size_t bitsToWrite = 0;
 
+    auto countOffset = aCount + bitIndex;
     // Compute how many bytes we will end up writing
-    auto bytesToWrite = ((aCount & ~0x7) + ((aCount & 0x7) != 0 ? 8 : 0)) >> 3;
+    auto bytesToWrite = ((countOffset & ~0x7) + ((countOffset & 0x7) != 0 ? 8 : 0)) >> 3;
 
     if (bytesToWrite + GetBytePosition() > m_pBuffer->GetSize())
     {

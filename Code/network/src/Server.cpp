@@ -24,7 +24,7 @@ bool Server::Start(uint16_t aPort)
 
 uint32_t Server::Update(uint64_t aElapsedMilliSeconds)
 {
-    (void)aElapsedMilliSeconds;
+    m_connectionManager.Update(aElapsedMilliSeconds);
 
     return Work();
 }
@@ -34,12 +34,26 @@ uint16_t Server::GetPort() const
     return m_v4Listener.GetPort();
 }
 
+bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer)
+{
+    if (acRemoteEndpoint.IsIPv6())
+    {
+        Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
+
+        m_v6Listener.Send(packet);
+    }
+
+    return false;
+}
+
 bool Server::ProcessPacket(Socket::Packet& aPacket)
 {
     auto pConnection = m_connectionManager.Find(aPacket.Remote);
-    if (pConnection)
+    if (!pConnection)
     {
-        m_connectionManager.Add(aPacket.Remote, &aPacket.Payload);
+        Connection connection(*this, aPacket.Remote);
+
+        m_connectionManager.Add(std::move(connection));
 
         return true;
     }

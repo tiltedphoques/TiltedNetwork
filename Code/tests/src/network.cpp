@@ -153,6 +153,63 @@ TEST_CASE("Networking", "[network]")
     }
 }
 
+TEST_CASE("Connection", "[network.connection]")
+{
+    GIVEN("A connection with a dummy interface")
+    {
+        static uint32_t s_count{0};
+        static Endpoint remoteEndpoint{ "127.0.0.1" };
+        static Buffer buffer;
+
+        remoteEndpoint.SetPort(12345);
+
+        struct DummyCommunication : Connection::ICommunication
+        {
+            bool Send(const Endpoint& acRemote, Buffer aBuffer) override
+            {
+                REQUIRE(acRemote == remoteEndpoint);
+                buffer = aBuffer;
+                ++s_count;
+                return true;
+            }
+        };
+
+        DummyCommunication comm;
+
+        Connection connection(comm, remoteEndpoint);
+        REQUIRE(connection.IsNegotiating());
+
+        connection.Update(1);
+
+        REQUIRE(s_count == 1);
+        REQUIRE(buffer.GetData()[0] == 'M');
+        REQUIRE(buffer.GetData()[1] == 'G');
+
+        REQUIRE(connection.ProcessNegociation(&buffer));
+    }
+}
+
+TEST_CASE("Server", "[network.server]")
+{
+    GIVEN("A client server model")
+    {
+        Buffer buffer(100);
+
+        Server server;
+        REQUIRE(server.Start(0));
+        REQUIRE(server.GetPort() != 0);
+
+        Endpoint serverEndpoint{ "127.0.0.1" };
+
+        serverEndpoint.SetPort(server.GetPort());
+
+        Socket client(Endpoint::kIPv4);
+        client.Bind();
+
+        Socket::Packet packet{ serverEndpoint, buffer };
+    }
+}
+
 TEST_CASE("Endpoint", "[network.endpoint]")
 {
     GIVEN("An empty endpoint")
