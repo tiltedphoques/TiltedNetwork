@@ -244,11 +244,61 @@ TEST_CASE("Endpoint", "[network.endpoint]")
         REQUIRE(endpoint.IsValid() == false);
         REQUIRE(endpoint.GetPort() == 0);
     }
-    GIVEN("A bad IP")
+    GIVEN("A bad hostname")
     {
-        Endpoint endpoint("lol");
+        Endpoint endpoint("lolcalhost777");
         REQUIRE(endpoint.IsValid() == false);
         REQUIRE(endpoint.GetPort() == 0);
+    }
+    GIVEN("A hostname")
+    {
+        Endpoint endpoint("localhost");
+        REQUIRE(endpoint.IsValid() == true);
+        REQUIRE(endpoint.GetPort() == 0);
+
+        if (endpoint.IsIPv6())
+        {
+            REQUIRE(endpoint.GetIPv6()[0] == 0);
+            REQUIRE(endpoint.GetIPv6()[1] == 0);
+            REQUIRE(endpoint.GetIPv6()[2] == 0);
+            REQUIRE(endpoint.GetIPv6()[3] == 0);
+            REQUIRE(endpoint.GetIPv6()[4] == 0);
+            REQUIRE(endpoint.GetIPv6()[5] == 0);
+            REQUIRE(endpoint.GetIPv6()[6] == 0);
+            REQUIRE(endpoint.GetIPv6()[7] == 1);
+        }
+        else
+        {
+            REQUIRE(endpoint.GetIPv4()[0] == 127);
+            REQUIRE(endpoint.GetIPv4()[1] == 0);
+            REQUIRE(endpoint.GetIPv4()[2] == 0);
+            REQUIRE(endpoint.GetIPv4()[3] == 1);
+        }
+    }
+    GIVEN("A hostname with a port")
+    {
+        Endpoint endpoint("localhost:12345");
+        REQUIRE(endpoint.IsValid() == true);
+        REQUIRE(endpoint.GetPort() == 12345);
+
+        if (endpoint.IsIPv6())
+        {
+            REQUIRE(endpoint.GetIPv6()[0] == 0);
+            REQUIRE(endpoint.GetIPv6()[1] == 0);
+            REQUIRE(endpoint.GetIPv6()[2] == 0);
+            REQUIRE(endpoint.GetIPv6()[3] == 0);
+            REQUIRE(endpoint.GetIPv6()[4] == 0);
+            REQUIRE(endpoint.GetIPv6()[5] == 0);
+            REQUIRE(endpoint.GetIPv6()[6] == 0);
+            REQUIRE(endpoint.GetIPv6()[7] == 1);
+        }
+        else
+        {
+            REQUIRE(endpoint.GetIPv4()[0] == 127);
+            REQUIRE(endpoint.GetIPv4()[1] == 0);
+            REQUIRE(endpoint.GetIPv4()[2] == 0);
+            REQUIRE(endpoint.GetIPv4()[3] == 1);
+        }
     }
     GIVEN("An IPv6")
     {

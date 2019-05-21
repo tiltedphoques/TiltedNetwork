@@ -47,6 +47,7 @@ public:
 protected:
 
     void Parse(const std::string& acEndpoint) noexcept;
+    bool ResolveHostname(const std::string& name) noexcept;
 
 private:
 

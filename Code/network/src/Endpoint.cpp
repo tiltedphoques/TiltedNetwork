@@ -199,12 +199,47 @@ void Endpoint::Parse(const std::string& acEndpoint) noexcept
         {
             new (this) Endpoint(sockaddr.sin_addr.s_addr, m_port);
         }
+        else if (ResolveHostname(endpoint.substr(0, endChar)))
+        {
+            // Endpoint should be initialized by now
+        }
         else
         {
             m_port = 0;
             m_type = kNone;
         }
     }
+}
 
+bool Endpoint::ResolveHostname(const std::string& name) noexcept
+{
+    struct addrinfo hints = {};
+    struct addrinfo *res;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
     
+    int err = getaddrinfo(name.c_str(), nullptr, &hints, &res);
+
+    if (err != 0) 
+    {
+        // printf("%s\n", gai_strerror(err));
+        return false;
+    }
+
+    for (struct addrinfo *r = res; r != nullptr; r = r->ai_next)
+    {
+        if (r->ai_family == AF_INET)
+        {
+            new (this) Endpoint(((struct sockaddr_in *)r->ai_addr)->sin_addr.s_addr, m_port);
+        }
+        else if (m_type == kNone)
+        {
+            // Give preference to IPv4
+            new (this) Endpoint((uint16_t *) &((struct sockaddr_in6 *)r->ai_addr)->sin6_addr, m_port);
+        }
+    }
+
+    freeaddrinfo(res);
+
+    return m_type != kNone;
 }
