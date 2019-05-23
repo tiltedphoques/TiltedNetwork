@@ -11,7 +11,8 @@
 #include <sys/socket.h> 
 #include <sys/select.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h> 
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <netinet/in.h> 
 #include <errno.h>
 #else 
