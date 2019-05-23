@@ -240,7 +240,7 @@ TEST_CASE("Endpoint", "[network.endpoint]")
     }
     GIVEN("A bad IPv4")
     {
-        Endpoint endpoint("127.0.1");
+        Endpoint endpoint("127.0.0.0.1");
         REQUIRE(endpoint.IsValid() == false);
         REQUIRE(endpoint.GetPort() == 0);
     }
