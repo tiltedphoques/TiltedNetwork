@@ -219,9 +219,21 @@ TEST_CASE("Endpoint", "[network.endpoint]")
         Endpoint endpoint;
         REQUIRE(endpoint.IsValid() == false);
     }
+}
+
+TEST_CASE("Resolver", "[network.resolver]")
+{
+    GIVEN("An empty address")
+    {
+        Resolver resolver("");
+        REQUIRE(resolver.GetEndpoints().empty());
+    }
+
     GIVEN("An IPv4")
     {
-        Endpoint endpoint("127.0.0.1");
+        Resolver resolver("127.0.0.1");
+        REQUIRE(resolver.GetEndpoints().size() == 1);
+        Endpoint endpoint = resolver.GetEndpoints()[0];
         REQUIRE(endpoint.IsIPv4() == true);
         REQUIRE(endpoint.GetPort() == 0);
         REQUIRE(endpoint.GetIPv4()[0] == 127);
@@ -231,7 +243,9 @@ TEST_CASE("Endpoint", "[network.endpoint]")
     }
     GIVEN("An IPv4 with a port")
     {
-        Endpoint endpoint("127.0.0.1:12345");
+        Resolver resolver("127.0.0.1:12345");
+        REQUIRE(resolver.GetEndpoints().size() == 1);
+        Endpoint endpoint = resolver.GetEndpoints()[0];
         REQUIRE(endpoint.IsIPv4() == true);
         REQUIRE(endpoint.GetPort() == 12345);
         REQUIRE(endpoint.GetIPv4()[0] == 127);
@@ -241,69 +255,77 @@ TEST_CASE("Endpoint", "[network.endpoint]")
     }
     GIVEN("A bad IPv4")
     {
-        Endpoint endpoint("127.0.0.0.1");
-        REQUIRE(endpoint.IsValid() == false);
-        REQUIRE(endpoint.GetPort() == 0);
+        Resolver resolver("127.0.0.0.1");
+        REQUIRE(resolver.GetEndpoints().empty());
     }
     GIVEN("A bad hostname")
     {
-        Endpoint endpoint("lolcalhost777");
-        REQUIRE(endpoint.IsValid() == false);
-        REQUIRE(endpoint.GetPort() == 0);
+        Resolver resolver("lolcalhost777");
+        REQUIRE(resolver.GetEndpoints().empty());
     }
     GIVEN("A hostname")
     {
-        Endpoint endpoint("localhost");
-        REQUIRE(endpoint.IsValid() == true);
-        REQUIRE(endpoint.GetPort() == 0);
+        Resolver resolver("localhost");
+        REQUIRE(resolver.GetEndpoints().size() > 0);
 
-        if (endpoint.IsIPv6())
-        {
-            REQUIRE(endpoint.GetIPv6()[0] == 0);
-            REQUIRE(endpoint.GetIPv6()[1] == 0);
-            REQUIRE(endpoint.GetIPv6()[2] == 0);
-            REQUIRE(endpoint.GetIPv6()[3] == 0);
-            REQUIRE(endpoint.GetIPv6()[4] == 0);
-            REQUIRE(endpoint.GetIPv6()[5] == 0);
-            REQUIRE(endpoint.GetIPv6()[6] == 0);
-            REQUIRE(endpoint.GetIPv6()[7] == 1);
-        }
-        else
-        {
-            REQUIRE(endpoint.GetIPv4()[0] == 127);
-            REQUIRE(endpoint.GetIPv4()[1] == 0);
-            REQUIRE(endpoint.GetIPv4()[2] == 0);
-            REQUIRE(endpoint.GetIPv4()[3] == 1);
+        for (Endpoint endpoint : resolver.GetEndpoints()) {
+            REQUIRE(endpoint.IsValid() == true);
+            REQUIRE(endpoint.GetPort() == 0);
+
+            if (endpoint.IsIPv6())
+            {
+                REQUIRE(endpoint.GetIPv6()[0] == 0);
+                REQUIRE(endpoint.GetIPv6()[1] == 0);
+                REQUIRE(endpoint.GetIPv6()[2] == 0);
+                REQUIRE(endpoint.GetIPv6()[3] == 0);
+                REQUIRE(endpoint.GetIPv6()[4] == 0);
+                REQUIRE(endpoint.GetIPv6()[5] == 0);
+                REQUIRE(endpoint.GetIPv6()[6] == 0);
+                REQUIRE(endpoint.GetIPv6()[7] == 1);
+            }
+            else
+            {
+                REQUIRE(endpoint.GetIPv4()[0] == 127);
+                REQUIRE(endpoint.GetIPv4()[1] == 0);
+                REQUIRE(endpoint.GetIPv4()[2] == 0);
+                REQUIRE(endpoint.GetIPv4()[3] == 1);
+            }
         }
     }
     GIVEN("A hostname with a port")
     {
-        Endpoint endpoint("localhost:12345");
-        REQUIRE(endpoint.IsValid() == true);
-        REQUIRE(endpoint.GetPort() == 12345);
+        Resolver resolver("localhost:12345");
+        REQUIRE(resolver.GetEndpoints().size() > 0);
 
-        if (endpoint.IsIPv6())
-        {
-            REQUIRE(endpoint.GetIPv6()[0] == 0);
-            REQUIRE(endpoint.GetIPv6()[1] == 0);
-            REQUIRE(endpoint.GetIPv6()[2] == 0);
-            REQUIRE(endpoint.GetIPv6()[3] == 0);
-            REQUIRE(endpoint.GetIPv6()[4] == 0);
-            REQUIRE(endpoint.GetIPv6()[5] == 0);
-            REQUIRE(endpoint.GetIPv6()[6] == 0);
-            REQUIRE(endpoint.GetIPv6()[7] == 1);
-        }
-        else
-        {
-            REQUIRE(endpoint.GetIPv4()[0] == 127);
-            REQUIRE(endpoint.GetIPv4()[1] == 0);
-            REQUIRE(endpoint.GetIPv4()[2] == 0);
-            REQUIRE(endpoint.GetIPv4()[3] == 1);
+        for (Endpoint endpoint : resolver.GetEndpoints()) {
+            REQUIRE(endpoint.IsValid() == true);
+            REQUIRE(endpoint.GetPort() == 12345);
+
+            if (endpoint.IsIPv6())
+            {
+                REQUIRE(endpoint.GetIPv6()[0] == 0);
+                REQUIRE(endpoint.GetIPv6()[1] == 0);
+                REQUIRE(endpoint.GetIPv6()[2] == 0);
+                REQUIRE(endpoint.GetIPv6()[3] == 0);
+                REQUIRE(endpoint.GetIPv6()[4] == 0);
+                REQUIRE(endpoint.GetIPv6()[5] == 0);
+                REQUIRE(endpoint.GetIPv6()[6] == 0);
+                REQUIRE(endpoint.GetIPv6()[7] == 1);
+            }
+            else
+            {
+                REQUIRE(endpoint.GetIPv4()[0] == 127);
+                REQUIRE(endpoint.GetIPv4()[1] == 0);
+                REQUIRE(endpoint.GetIPv4()[2] == 0);
+                REQUIRE(endpoint.GetIPv4()[3] == 1);
+            }
         }
     }
     GIVEN("An IPv6")
     {
-        Endpoint endpoint("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]");
+        Resolver resolver("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]");
+        REQUIRE(resolver.GetEndpoints().size() == 1);
+        Endpoint endpoint = resolver.GetEndpoints()[0];
         REQUIRE(endpoint.IsIPv6() == true);
         REQUIRE(endpoint.GetPort() == 0);
         REQUIRE(endpoint.GetIPv6()[0] == 0x2001);
@@ -317,7 +339,9 @@ TEST_CASE("Endpoint", "[network.endpoint]")
     }
     GIVEN("An IPv6 with a port")
     {
-        Endpoint endpoint("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:12345");
+        Resolver resolver("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:12345");
+        REQUIRE(resolver.GetEndpoints().size() == 1);
+        Endpoint endpoint = resolver.GetEndpoints()[0];
         REQUIRE(endpoint.IsIPv6() == true);
         REQUIRE(endpoint.GetPort() == 12345);
         REQUIRE(endpoint.GetIPv6()[0] == 0x2001);
@@ -328,14 +352,5 @@ TEST_CASE("Endpoint", "[network.endpoint]")
         REQUIRE(endpoint.GetIPv6()[5] == 0x8a2e);
         REQUIRE(endpoint.GetIPv6()[6] == 0x0370);
         REQUIRE(endpoint.GetIPv6()[7] == 0x7334);
-    }
-}
-
-TEST_CASE("Resolver", "[network.resolver]")
-{
-    GIVEN("An empty address")
-    {
-        Resolver resolver("");
-        REQUIRE(resolver.GetEndpoints().empty());
     }
 }
