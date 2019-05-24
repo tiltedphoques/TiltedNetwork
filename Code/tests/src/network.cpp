@@ -1,6 +1,7 @@
 #include "catch.hpp"
 
 #include "Socket.h"
+#include "Resolver.h"
 #include "Server.h"
 #include "Selector.h"
 
@@ -327,5 +328,14 @@ TEST_CASE("Endpoint", "[network.endpoint]")
         REQUIRE(endpoint.GetIPv6()[5] == 0x8a2e);
         REQUIRE(endpoint.GetIPv6()[6] == 0x0370);
         REQUIRE(endpoint.GetIPv6()[7] == 0x7334);
+    }
+}
+
+TEST_CASE("Resolver", "[network.resolver]")
+{
+    GIVEN("An empty address")
+    {
+        Resolver resolver("");
+        REQUIRE(resolver.GetEndpoints().empty());
     }
 }
