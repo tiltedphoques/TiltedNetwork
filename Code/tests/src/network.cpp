@@ -226,14 +226,14 @@ TEST_CASE("Resolver", "[network.resolver]")
     GIVEN("An empty address")
     {
         Resolver resolver("");
-        REQUIRE(resolver.GetEndpoints().empty());
+        REQUIRE(resolver.IsEmpty() == true);
     }
 
     GIVEN("An IPv4")
     {
         Resolver resolver("127.0.0.1");
-        REQUIRE(resolver.GetEndpoints().size() == 1);
-        Endpoint endpoint = resolver.GetEndpoints()[0];
+        REQUIRE(resolver.GetSize() == 1);
+        Endpoint endpoint = resolver[0];
         REQUIRE(endpoint.IsIPv4() == true);
         REQUIRE(endpoint.GetPort() == 0);
         REQUIRE(endpoint.GetIPv4()[0] == 127);
@@ -244,8 +244,8 @@ TEST_CASE("Resolver", "[network.resolver]")
     GIVEN("An IPv4 with a port")
     {
         Resolver resolver("127.0.0.1:12345");
-        REQUIRE(resolver.GetEndpoints().size() == 1);
-        Endpoint endpoint = resolver.GetEndpoints()[0];
+        REQUIRE(resolver.GetSize() == 1);
+        Endpoint endpoint = resolver[0];
         REQUIRE(endpoint.IsIPv4() == true);
         REQUIRE(endpoint.GetPort() == 12345);
         REQUIRE(endpoint.GetIPv4()[0] == 127);
@@ -256,19 +256,19 @@ TEST_CASE("Resolver", "[network.resolver]")
     GIVEN("A bad IPv4")
     {
         Resolver resolver("127.0.0.0.1");
-        REQUIRE(resolver.GetEndpoints().empty());
+        REQUIRE(resolver.IsEmpty() == true);
     }
     GIVEN("A bad hostname")
     {
         Resolver resolver("lolcalhost777");
-        REQUIRE(resolver.GetEndpoints().empty());
+        REQUIRE(resolver.IsEmpty() == true);
     }
     GIVEN("A hostname")
     {
         Resolver resolver("localhost");
-        REQUIRE(resolver.GetEndpoints().size() > 0);
+        REQUIRE(resolver.IsEmpty() == false);
 
-        for (Endpoint endpoint : resolver.GetEndpoints()) {
+        for (Endpoint endpoint : resolver) {
             REQUIRE(endpoint.IsValid() == true);
             REQUIRE(endpoint.GetPort() == 0);
 
@@ -294,10 +294,11 @@ TEST_CASE("Resolver", "[network.resolver]")
     }
     GIVEN("A hostname with a port")
     {
-        Resolver resolver("localhost:12345");
-        REQUIRE(resolver.GetEndpoints().size() > 0);
+        Resolver resolver_original("localhost:12345");
+        Resolver resolver(std::move(resolver_original));
+        REQUIRE(resolver.IsEmpty() == false);
 
-        for (Endpoint endpoint : resolver.GetEndpoints()) {
+        for (Endpoint endpoint : resolver) {
             REQUIRE(endpoint.IsValid() == true);
             REQUIRE(endpoint.GetPort() == 12345);
 
@@ -324,8 +325,8 @@ TEST_CASE("Resolver", "[network.resolver]")
     GIVEN("An IPv6")
     {
         Resolver resolver("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]");
-        REQUIRE(resolver.GetEndpoints().size() == 1);
-        Endpoint endpoint = resolver.GetEndpoints()[0];
+        REQUIRE(resolver.GetSize() == 1);
+        Endpoint endpoint = resolver[0];
         REQUIRE(endpoint.IsIPv6() == true);
         REQUIRE(endpoint.GetPort() == 0);
         REQUIRE(endpoint.GetIPv6()[0] == 0x2001);
@@ -340,8 +341,8 @@ TEST_CASE("Resolver", "[network.resolver]")
     GIVEN("An IPv6 with a port")
     {
         Resolver resolver("[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:12345");
-        REQUIRE(resolver.GetEndpoints().size() == 1);
-        Endpoint endpoint = resolver.GetEndpoints()[0];
+        REQUIRE(resolver.GetSize() == 1);
+        Endpoint endpoint = resolver[0];
         REQUIRE(endpoint.IsIPv6() == true);
         REQUIRE(endpoint.GetPort() == 12345);
         REQUIRE(endpoint.GetIPv6()[0] == 0x2001);

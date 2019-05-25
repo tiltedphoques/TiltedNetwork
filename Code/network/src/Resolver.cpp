@@ -1,14 +1,59 @@
 #include "Resolver.h"
 
+#include <utility>
+
 Resolver::Resolver(const std::string & acAddress):
     m_futureEndpoints(std::future<std::vector<Endpoint>>()),
-    m_endpoints(std::vector<Endpoint>()),
-    m_port(0)
+    m_endpoints(std::vector<Endpoint>())
 {
     Parse(acAddress);
 }
 
-std::vector<Endpoint> Resolver::GetEndpoints() noexcept
+Resolver::Resolver(Resolver && aRhs) noexcept:
+    m_futureEndpoints{std::move(aRhs.m_futureEndpoints)},
+    m_endpoints{std::move(aRhs.m_endpoints)}
+{
+}
+
+size_t Resolver::GetSize() noexcept
+{
+    return GetEndpoints().size();
+}
+
+bool Resolver::IsEmpty() noexcept
+{
+    return GetSize() == 0;
+}
+
+Endpoint Resolver::GetEndpoint(const size_t & acIndex) noexcept
+{
+    return GetEndpoints().at(acIndex);
+}
+
+Endpoint Resolver::operator[](const size_t & acIndex) noexcept
+{
+    return GetEndpoint(acIndex);
+}
+
+Resolver & Resolver::operator=(Resolver && aRhs) noexcept
+{
+    m_endpoints = std::move(aRhs.m_endpoints);
+    m_futureEndpoints = std::move(aRhs.m_futureEndpoints);
+
+    return *this;
+}
+
+Resolver::Iterator Resolver::begin() noexcept
+{
+    return Iterator(GetEndpoints().cbegin());
+}
+
+Resolver::Iterator Resolver::end() noexcept
+{
+    return Iterator(GetEndpoints().cend());
+}
+
+std::vector<Endpoint> & Resolver::GetEndpoints() noexcept
 {
     if (m_futureEndpoints.valid()) {
         // std::future::get can only be called once in its lifetime, so we have to keep them all in m_endpoints
@@ -21,6 +66,7 @@ std::vector<Endpoint> Resolver::GetEndpoints() noexcept
 
 void Resolver::Parse(const std::string & acAddress) noexcept
 {
+    uint16_t port = 0;
     std::string strAddress(acAddress);
     
     if (acAddress.empty())
@@ -35,7 +81,7 @@ void Resolver::Parse(const std::string & acAddress) noexcept
         if (endChar != std::string::npos)
         {
             if (endChar + 3 <= strAddress.size() && strAddress[endChar + 1] == ':')
-                m_port = std::atoi(&strAddress[endChar + 2]);
+                port = std::atoi(&strAddress[endChar + 2]);
 
             strAddress[endChar] = '\0';
         }
@@ -43,7 +89,7 @@ void Resolver::Parse(const std::string & acAddress) noexcept
         in6_addr sockaddr6;
         if (inet_pton(AF_INET6, &strAddress[1], &sockaddr6) == 1)
         {
-            m_endpoints.push_back(Endpoint((uint16_t*)& sockaddr6, m_port));
+            m_endpoints.push_back(Endpoint((uint16_t*)& sockaddr6, port));
         }
     }
     else
@@ -51,23 +97,24 @@ void Resolver::Parse(const std::string & acAddress) noexcept
         auto endChar = strAddress.rfind(':');
         if (endChar != std::string::npos && endChar + 2 <= strAddress.size())
         {
-            m_port = std::atoi(&strAddress[endChar + 1]);
+            port = std::atoi(&strAddress[endChar + 1]);
             strAddress[endChar] = '\0';
         }
 
         sockaddr_in sockaddr;
         if (inet_pton(AF_INET, &strAddress[0], &sockaddr.sin_addr) == 1)
         {
-            m_endpoints.push_back(Endpoint(sockaddr.sin_addr.s_addr, m_port));
+            m_endpoints.push_back(Endpoint(sockaddr.sin_addr.s_addr, port));
         }
         else
         {
-            m_futureEndpoints = std::async(std::launch::async, &Resolver::ResolveHostname, this, strAddress.substr(0, endChar));
+            // this call is safe as std::async const & args anyway
+            m_futureEndpoints = std::async(std::launch::async, &Resolver::ResolveHostname, this, strAddress.substr(0, endChar), port);
         }
     }
 }
 
-std::vector<Endpoint> Resolver::ResolveHostname(const std::string & acHostname) noexcept
+std::vector<Endpoint> Resolver::ResolveHostname(const std::string & acHostname, const uint16_t & port) noexcept
 {
     std::vector<Endpoint> endpoints = std::vector<Endpoint>();
     struct addrinfo hints = {};
@@ -87,11 +134,11 @@ std::vector<Endpoint> Resolver::ResolveHostname(const std::string & acHostname) 
     {
         if (r->ai_family == AF_INET)
         {
-            endpoints.push_back(Endpoint(((struct sockaddr_in *)r->ai_addr)->sin_addr.s_addr, m_port));
+            endpoints.push_back(Endpoint(((struct sockaddr_in *)r->ai_addr)->sin_addr.s_addr, port));
         }
         else if (r->ai_family == AF_INET6)
         {
-            endpoints.push_back(Endpoint((uint16_t *) &((struct sockaddr_in6 *)r->ai_addr)->sin6_addr, m_port));
+            endpoints.push_back(Endpoint((uint16_t *) &((struct sockaddr_in6 *)r->ai_addr)->sin6_addr, port));
         }
     }
 
