@@ -27,7 +27,7 @@ bool Resolver::IsEmpty() noexcept
 
 Endpoint Resolver::GetEndpoint(const size_t & acIndex) noexcept
 {
-    return GetEndpoints().at(acIndex);
+    return GetEndpoints()[acIndex];
 }
 
 Endpoint Resolver::operator[](const size_t & acIndex) noexcept
@@ -55,7 +55,8 @@ Resolver::Iterator Resolver::end() noexcept
 
 std::vector<Endpoint> & Resolver::GetEndpoints() noexcept
 {
-    if (m_futureEndpoints.valid()) {
+    if (m_futureEndpoints.valid()) 
+    {
         // std::future::get can only be called once in its lifetime, so we have to keep them all in m_endpoints
         const std::vector<Endpoint> & newEndpoints = m_futureEndpoints.get();
         m_endpoints.insert(std::end(m_endpoints), std::begin(newEndpoints), std::end(newEndpoints));
@@ -64,52 +65,51 @@ std::vector<Endpoint> & Resolver::GetEndpoints() noexcept
     return m_endpoints;
 }
 
-void Resolver::Parse(const std::string & acAddress) noexcept
+void Resolver::Parse(std::string aAdress) noexcept
 {
     uint16_t port = 0;
-    std::string strAddress(acAddress);
     
-    if (acAddress.empty())
+    if (aAdress.empty())
     {
         return;
     }
 
     // If we see an IPv6 start character
-    if (strAddress[0] == '[')
+    if (aAdress[0] == '[')
     {
-        auto endChar = strAddress.rfind(']');
+        auto endChar = aAdress.rfind(']');
         if (endChar != std::string::npos)
         {
-            if (endChar + 3 <= strAddress.size() && strAddress[endChar + 1] == ':')
-                port = std::atoi(&strAddress[endChar + 2]);
+            if (endChar + 3 <= aAdress.size() && aAdress[endChar + 1] == ':')
+                port = std::atoi(&aAdress[endChar + 2]);
 
-            strAddress[endChar] = '\0';
+            aAdress[endChar] = '\0';
         }
 
         in6_addr sockaddr6;
-        if (inet_pton(AF_INET6, &strAddress[1], &sockaddr6) == 1)
+        if (inet_pton(AF_INET6, &aAdress[1], &sockaddr6) == 1)
         {
             m_endpoints.push_back(Endpoint((uint16_t*)& sockaddr6, port));
         }
     }
     else
     {
-        auto endChar = strAddress.rfind(':');
-        if (endChar != std::string::npos && endChar + 2 <= strAddress.size())
+        auto endChar = aAdress.rfind(':');
+        if (endChar != std::string::npos && endChar + 2 <= aAdress.size())
         {
-            port = std::atoi(&strAddress[endChar + 1]);
-            strAddress[endChar] = '\0';
+            port = std::atoi(&aAdress[endChar + 1]);
+            aAdress[endChar] = '\0';
         }
 
         sockaddr_in sockaddr;
-        if (inet_pton(AF_INET, &strAddress[0], &sockaddr.sin_addr) == 1)
+        if (inet_pton(AF_INET, &aAdress[0], &sockaddr.sin_addr) == 1)
         {
             m_endpoints.push_back(Endpoint(sockaddr.sin_addr.s_addr, port));
         }
         else
         {
             // this call is safe as std::async const & args anyway
-            m_futureEndpoints = std::async(std::launch::async, &Resolver::ResolveHostname, this, strAddress.substr(0, endChar), port);
+            m_futureEndpoints = std::async(std::launch::async, &Resolver::ResolveHostname, this, aAdress, port);
         }
     }
 }

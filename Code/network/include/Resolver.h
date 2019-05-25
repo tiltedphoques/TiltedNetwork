@@ -10,7 +10,8 @@
 class Resolver
 {
 public:
-    class Iterator {
+    class Iterator 
+    {
     public:
         using difference_type = ptrdiff_t;
         using value_type = Endpoint;
@@ -18,13 +19,32 @@ public:
         using reference = const Endpoint&;
         using iterator_category = std::forward_iterator_tag;
 
-        Iterator() : m_iterator() {}
-        Iterator(std::vector<value_type>::const_iterator aIterator) : m_iterator(aIterator) {}
-        Iterator& operator++() { ++m_iterator;  return *this; }
-        bool operator==(const Iterator& acIterator) const { return m_iterator == acIterator.m_iterator; }
-        bool operator!=(const Iterator& acIterator) const { return m_iterator != acIterator.m_iterator; }
-        reference operator*() const { return *m_iterator; }
-        pointer operator->() const { return m_iterator.operator->(); }
+        Iterator() : m_iterator()
+        {
+        }
+        Iterator(std::vector<value_type>::const_iterator aIterator) : m_iterator(aIterator)
+        {
+        }
+        Iterator& operator++()
+        {
+            ++m_iterator;  return *this;
+        }
+        bool operator==(const Iterator& acIterator) const
+        {
+            return m_iterator == acIterator.m_iterator;
+        }
+        bool operator!=(const Iterator& acIterator) const
+        {
+            return m_iterator != acIterator.m_iterator;
+        }
+        reference operator*() const
+        {
+            return *m_iterator;
+        }
+        pointer operator->() const
+        {
+            return m_iterator.operator->();
+        }
 
     private:
         std::vector<value_type>::const_iterator m_iterator;
@@ -44,7 +64,7 @@ public:
 
 protected:
     std::vector<Endpoint>& GetEndpoints() noexcept;
-    void Parse(const std::string& acAddress) noexcept;
+    void Parse(std::string aAddress) noexcept;
     std::vector<Endpoint> ResolveHostname(const std::string& acHostname, const uint16_t& acPort) noexcept;
 
 private:
