@@ -1,6 +1,8 @@
 #include "Endpoint.h"
 #include "Network.h"
 
+#include <cstring>
+
 Endpoint::Endpoint() noexcept
 {
     m_port = 0;
