@@ -65,51 +65,51 @@ std::vector<Endpoint> & Resolver::GetEndpoints() noexcept
     return m_endpoints;
 }
 
-void Resolver::Parse(std::string aAdress) noexcept
+void Resolver::Parse(std::string aAddress) noexcept
 {
     uint16_t port = 0;
     
-    if (aAdress.empty())
+    if (aAddress.empty())
     {
         return;
     }
 
     // If we see an IPv6 start character
-    if (aAdress[0] == '[')
+    if (aAddress[0] == '[')
     {
-        auto endChar = aAdress.rfind(']');
+        auto endChar = aAddress.rfind(']');
         if (endChar != std::string::npos)
         {
-            if (endChar + 3 <= aAdress.size() && aAdress[endChar + 1] == ':')
-                port = std::atoi(&aAdress[endChar + 2]);
+            if (endChar + 3 <= aAddress.size() && aAddress[endChar + 1] == ':')
+                port = std::atoi(&aAddress[endChar + 2]);
 
-            aAdress[endChar] = '\0';
+            aAddress[endChar] = '\0';
         }
 
         in6_addr sockaddr6;
-        if (inet_pton(AF_INET6, &aAdress[1], &sockaddr6) == 1)
+        if (inet_pton(AF_INET6, &aAddress[1], &sockaddr6) == 1)
         {
             m_endpoints.push_back(Endpoint((uint16_t*)& sockaddr6, port));
         }
     }
     else
     {
-        auto endChar = aAdress.rfind(':');
-        if (endChar != std::string::npos && endChar + 2 <= aAdress.size())
+        auto endChar = aAddress.rfind(':');
+        if (endChar != std::string::npos && endChar + 2 <= aAddress.size())
         {
-            port = std::atoi(&aAdress[endChar + 1]);
-            aAdress[endChar] = '\0';
+            port = std::atoi(&aAddress[endChar + 1]);
+            aAddress[endChar] = '\0';
         }
 
         sockaddr_in sockaddr;
-        if (inet_pton(AF_INET, &aAdress[0], &sockaddr.sin_addr) == 1)
+        if (inet_pton(AF_INET, &aAddress[0], &sockaddr.sin_addr) == 1)
         {
             m_endpoints.push_back(Endpoint(sockaddr.sin_addr.s_addr, port));
         }
         else
         {
             // this call is safe as std::async const & args anyway
-            m_futureEndpoints = std::async(std::launch::async, &Resolver::ResolveHostname, this, aAdress, port);
+            m_futureEndpoints = std::async(std::launch::async, &Resolver::ResolveHostname, this, aAddress, port);
         }
     }
 }
