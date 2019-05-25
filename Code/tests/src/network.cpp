@@ -9,211 +9,10 @@
 #include <thread>
 
 
-TEST_CASE("Networking", "[network]")
+TEST_CASE("Endpoint", "[network.endpoint]")
 {
     InitializeNetwork();
 
-    GIVEN("A basic socket")
-    {
-        Socket sock;
-        REQUIRE(sock.GetPort() == 0);
-        REQUIRE(sock.Bind() == true);
-        REQUIRE(sock.GetPort() != 0);
-    }
-    GIVEN("Two sockets v4")
-    {
-        static const std::string testString = "abcdef";
-
-        Buffer buffer(100);
-
-        Socket client(Endpoint::kIPv4), server(Endpoint::kIPv4);
-        REQUIRE(client.Bind());
-        REQUIRE(server.Bind());
-
-        Selector clientSelector(client);
-        Selector serverSelector(server);
-
-        REQUIRE(clientSelector.IsReady() == false);
-        REQUIRE(serverSelector.IsReady() == false);
-
-        Endpoint clientEndpoint{ "127.0.0.1" };
-        Endpoint serverEndpoint{ "127.0.0.1" };
-        clientEndpoint.SetPort(client.GetPort());
-        serverEndpoint.SetPort(server.GetPort());
-
-        Buffer::Writer writer(&buffer);
-        writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
-
-        Socket::Packet packet{ serverEndpoint, buffer };
-
-        REQUIRE(serverSelector.IsReady() == false);
-
-        REQUIRE(client.Send(packet));
-
-        // Now the server should have available data
-        REQUIRE(serverSelector.IsReady());
-
-        auto result = server.Receive();
-        REQUIRE(result.HasError() == false);
-        auto data = result.GetResult();
-        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Remote.IsIPv4());
-
-        // Reply exactly what we got to the client
-        REQUIRE(server.Send(data));
-        result = client.Receive();
-        REQUIRE(result.HasError() == false);
-        data = result.GetResult();
-        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Remote.IsIPv4());
-    }
-    GIVEN("Two sockets v6")
-    {
-        static const std::string testString = "abcdef";
-
-        Buffer buffer(100);
-
-        Socket client, server;
-        REQUIRE(client.Bind());
-        REQUIRE(server.Bind());
-
-        Selector clientSelector(client);
-        Selector serverSelector(server);
-
-        REQUIRE(clientSelector.IsReady() == false);
-        REQUIRE(serverSelector.IsReady() == false);
-
-        Endpoint clientEndpoint{ "[::1]" };
-        Endpoint serverEndpoint{ "[::1]" };
-        clientEndpoint.SetPort(client.GetPort());
-        serverEndpoint.SetPort(server.GetPort());
-
-        Buffer::Writer writer(&buffer);
-        writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
-
-        Socket::Packet packet{ serverEndpoint, buffer };
-
-        REQUIRE(serverSelector.IsReady() == false);
-
-        REQUIRE(client.Send(packet));
-
-        // Now the server should have available data
-        REQUIRE(serverSelector.IsReady());
-
-        auto result = server.Receive();
-        REQUIRE(result.HasError() == false);
-        auto data = result.GetResult();
-        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Remote.IsIPv6());
-
-        // Reply exactly what we got to the client
-        REQUIRE(server.Send(data));
-        result = client.Receive();
-        REQUIRE(result.HasError() == false);
-        data = result.GetResult();
-        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
-        REQUIRE(data.Remote.IsIPv6());
-    }
-
-    GIVEN("A client server model")
-    {
-        Buffer buffer(100);
-
-        Server server;
-        REQUIRE(server.Start(0));
-
-        REQUIRE(server.GetPort() != 0);
-
-        Endpoint serverEndpointv6{ "[::1]" };
-        Endpoint serverEndpointv4{ "127.0.0.1" };
-
-        serverEndpointv6.SetPort(server.GetPort());
-        serverEndpointv4.SetPort(server.GetPort());
-
-        Socket clientv6(Endpoint::kIPv6);
-        Socket clientv4(Endpoint::kIPv4);
-
-        clientv6.Bind();
-        clientv4.Bind();
-
-        Socket::Packet packetv6{ serverEndpointv6, buffer };
-        Socket::Packet packetv4{ serverEndpointv4, buffer };
-
-        REQUIRE(clientv6.Send(packetv6));
-
-        REQUIRE(server.Update(1) == 1);
-
-        REQUIRE(clientv4.Send(packetv4));
-
-        REQUIRE(server.Update(1) == 1);
-
-        REQUIRE(clientv6.Send(packetv6));
-        REQUIRE(clientv4.Send(packetv4));
-
-        REQUIRE(server.Update(1) == 2);
-    }
-}
-
-TEST_CASE("Connection", "[network.connection]")
-{
-    GIVEN("A connection with a dummy interface")
-    {
-        static uint32_t s_count{0};
-        static Endpoint remoteEndpoint{ "127.0.0.1" };
-        static Buffer buffer;
-
-        remoteEndpoint.SetPort(12345);
-
-        struct DummyCommunication : Connection::ICommunication
-        {
-            bool Send(const Endpoint& acRemote, Buffer aBuffer) override
-            {
-                REQUIRE(acRemote == remoteEndpoint);
-                buffer = aBuffer;
-                ++s_count;
-                return true;
-            }
-        };
-
-        DummyCommunication comm;
-
-        Connection connection(comm, remoteEndpoint);
-        Connection connection2(comm, remoteEndpoint);
-        REQUIRE(connection.IsNegotiating());
-
-        connection.Update(1);
-
-        REQUIRE(s_count == 1);
-        REQUIRE(buffer.GetData()[0] == 'M');
-        REQUIRE(buffer.GetData()[1] == 'G');
-
-        REQUIRE(connection2.ProcessNegociation(&buffer));
-    }
-}
-
-TEST_CASE("Server", "[network.server]")
-{
-    GIVEN("A client server model")
-    {
-        Buffer buffer(100);
-
-        Server server;
-        REQUIRE(server.Start(0));
-        REQUIRE(server.GetPort() != 0);
-
-        Endpoint serverEndpoint{ "127.0.0.1" };
-
-        serverEndpoint.SetPort(server.GetPort());
-
-        Socket client(Endpoint::kIPv4);
-        client.Bind();
-
-        Socket::Packet packet{ serverEndpoint, buffer };
-    }
-}
-
-TEST_CASE("Endpoint", "[network.endpoint]")
-{
     GIVEN("An empty endpoint")
     {
         Endpoint endpoint;
@@ -268,7 +67,7 @@ TEST_CASE("Resolver", "[network.resolver]")
         Resolver resolver("localhost");
         REQUIRE(resolver.IsEmpty() == false);
 
-        for (Endpoint endpoint : resolver) {
+        for (const Endpoint& endpoint : resolver) {
             REQUIRE(endpoint.IsValid() == true);
             REQUIRE(endpoint.GetPort() == 0);
 
@@ -298,7 +97,7 @@ TEST_CASE("Resolver", "[network.resolver]")
         Resolver resolver(std::move(resolver_original));
         REQUIRE(resolver.IsEmpty() == false);
 
-        for (Endpoint endpoint : resolver) {
+        for (const Endpoint& endpoint : resolver) {
             REQUIRE(endpoint.IsValid() == true);
             REQUIRE(endpoint.GetPort() == 12345);
 
@@ -353,5 +152,212 @@ TEST_CASE("Resolver", "[network.resolver]")
         REQUIRE(endpoint.GetIPv6()[5] == 0x8a2e);
         REQUIRE(endpoint.GetIPv6()[6] == 0x0370);
         REQUIRE(endpoint.GetIPv6()[7] == 0x7334);
+    }
+}
+
+TEST_CASE("Networking", "[network]")
+{
+    GIVEN("A basic socket")
+    {
+        Socket sock;
+        REQUIRE(sock.GetPort() == 0);
+        REQUIRE(sock.Bind() == true);
+        REQUIRE(sock.GetPort() != 0);
+    }
+    GIVEN("Two sockets v4")
+    {
+        static const std::string testString = "abcdef";
+
+        Buffer buffer(100);
+
+        Socket client(Endpoint::kIPv4), server(Endpoint::kIPv4);
+        REQUIRE(client.Bind());
+        REQUIRE(server.Bind());
+
+        Selector clientSelector(client);
+        Selector serverSelector(server);
+
+        REQUIRE(clientSelector.IsReady() == false);
+        REQUIRE(serverSelector.IsReady() == false);
+
+        Resolver localhostResolver("127.0.0.1");
+        Endpoint clientEndpoint = localhostResolver[0];
+        Endpoint serverEndpoint = localhostResolver[0];
+        clientEndpoint.SetPort(client.GetPort());
+        serverEndpoint.SetPort(server.GetPort());
+
+        Buffer::Writer writer(&buffer);
+        writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
+
+        Socket::Packet packet{ serverEndpoint, buffer };
+
+        REQUIRE(serverSelector.IsReady() == false);
+
+        REQUIRE(client.Send(packet));
+
+        // Now the server should have available data
+        REQUIRE(serverSelector.IsReady());
+
+        auto result = server.Receive();
+        REQUIRE(result.HasError() == false);
+        auto data = result.GetResult();
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Remote.IsIPv4());
+
+        // Reply exactly what we got to the client
+        REQUIRE(server.Send(data));
+        result = client.Receive();
+        REQUIRE(result.HasError() == false);
+        data = result.GetResult();
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Remote.IsIPv4());
+    }
+    GIVEN("Two sockets v6")
+    {
+        static const std::string testString = "abcdef";
+
+        Buffer buffer(100);
+
+        Socket client, server;
+        REQUIRE(client.Bind());
+        REQUIRE(server.Bind());
+
+        Selector clientSelector(client);
+        Selector serverSelector(server);
+
+        REQUIRE(clientSelector.IsReady() == false);
+        REQUIRE(serverSelector.IsReady() == false);
+
+        Resolver localhostResolver("[::1]");
+        Endpoint clientEndpoint = localhostResolver[0];
+        Endpoint serverEndpoint = localhostResolver[0];
+        clientEndpoint.SetPort(client.GetPort());
+        serverEndpoint.SetPort(server.GetPort());
+
+        Buffer::Writer writer(&buffer);
+        writer.WriteBytes((const uint8_t*)testString.data(), testString.size());
+
+        Socket::Packet packet{ serverEndpoint, buffer };
+
+        REQUIRE(serverSelector.IsReady() == false);
+
+        REQUIRE(client.Send(packet));
+
+        // Now the server should have available data
+        REQUIRE(serverSelector.IsReady());
+
+        auto result = server.Receive();
+        REQUIRE(result.HasError() == false);
+        auto data = result.GetResult();
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Remote.IsIPv6());
+
+        // Reply exactly what we got to the client
+        REQUIRE(server.Send(data));
+        result = client.Receive();
+        REQUIRE(result.HasError() == false);
+        data = result.GetResult();
+        REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
+        REQUIRE(data.Remote.IsIPv6());
+    }
+
+    GIVEN("A client server model")
+    {
+        Buffer buffer(100);
+
+        Server server;
+        REQUIRE(server.Start(0));
+
+        REQUIRE(server.GetPort() != 0);
+
+        Resolver v4Resolver("127.0.0.1");
+        Resolver v6Resolver("[::1]");
+        Endpoint serverEndpointv4(v4Resolver[0]);
+        Endpoint serverEndpointv6(v6Resolver[0]);
+
+        serverEndpointv6.SetPort(server.GetPort());
+        serverEndpointv4.SetPort(server.GetPort());
+
+        Socket clientv6(Endpoint::kIPv6);
+        Socket clientv4(Endpoint::kIPv4);
+
+        clientv6.Bind();
+        clientv4.Bind();
+
+        Socket::Packet packetv6{ serverEndpointv6, buffer };
+        Socket::Packet packetv4{ serverEndpointv4, buffer };
+
+        REQUIRE(clientv6.Send(packetv6));
+
+        REQUIRE(server.Update(1) == 1);
+
+        REQUIRE(clientv4.Send(packetv4));
+
+        REQUIRE(server.Update(1) == 1);
+
+        REQUIRE(clientv6.Send(packetv6));
+        REQUIRE(clientv4.Send(packetv4));
+
+        REQUIRE(server.Update(1) == 2);
+    }
+}
+
+TEST_CASE("Connection", "[network.connection]")
+{
+    GIVEN("A connection with a dummy interface")
+    {
+        static uint32_t s_count{0};
+        Resolver localhostResolver("127.0.0.1");
+        static Endpoint remoteEndpoint = localhostResolver[0];
+        static Buffer buffer;
+
+        remoteEndpoint.SetPort(12345);
+
+        struct DummyCommunication : Connection::ICommunication
+        {
+            bool Send(const Endpoint& acRemote, Buffer aBuffer) override
+            {
+                REQUIRE(acRemote == remoteEndpoint);
+                buffer = aBuffer;
+                ++s_count;
+                return true;
+            }
+        };
+
+        DummyCommunication comm;
+
+        Connection connection(comm, remoteEndpoint);
+        Connection connection2(comm, remoteEndpoint);
+        REQUIRE(connection.IsNegotiating());
+
+        connection.Update(1);
+
+        REQUIRE(s_count == 1);
+        REQUIRE(buffer.GetData()[0] == 'M');
+        REQUIRE(buffer.GetData()[1] == 'G');
+
+        REQUIRE(connection2.ProcessNegociation(&buffer));
+    }
+}
+
+TEST_CASE("Server", "[network.server]")
+{
+    GIVEN("A client server model")
+    {
+        Buffer buffer(100);
+
+        Server server;
+        REQUIRE(server.Start(0));
+        REQUIRE(server.GetPort() != 0);
+
+        Resolver localhostResolver("127.0.0.1");
+        Endpoint serverEndpoint = localhostResolver[0];
+
+        serverEndpoint.SetPort(server.GetPort());
+
+        Socket client(Endpoint::kIPv4);
+        client.Bind();
+
+        Socket::Packet packet{ serverEndpoint, buffer };
     }
 }

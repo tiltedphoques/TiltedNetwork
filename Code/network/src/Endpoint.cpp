@@ -1,6 +1,5 @@
 #include "Endpoint.h"
 #include "Network.h"
-#include <cstring>
 
 Endpoint::Endpoint() noexcept
 {
@@ -11,14 +10,6 @@ Endpoint::Endpoint() noexcept
 Endpoint::Endpoint(Endpoint&& aRhs) noexcept
 {
     this->operator=(std::move(aRhs));
-}
-
-Endpoint::Endpoint(const std::string& acIp) noexcept
-{
-    m_port = 0;
-    m_type = kNone;
-
-    Parse(acIp);
 }
 
 Endpoint::Endpoint(const Endpoint& acRhs) noexcept
@@ -162,84 +153,4 @@ bool Endpoint::operator==(const Endpoint& acRhs) const noexcept
 bool Endpoint::operator!=(const Endpoint& acRhs) const noexcept
 {
     return !this->operator==(acRhs);
-}
-
-void Endpoint::Parse(const std::string& acEndpoint) noexcept
-{
-    std::string endpoint(acEndpoint);
-    // If we see an IPv6 start character
-    if (endpoint[0] == '[')
-    {
-        auto endChar = endpoint.rfind(']');
-        if (endChar != std::string::npos)
-        {
-            if(endChar + 3 <= endpoint.size() && endpoint[endChar + 1] == ':')
-                m_port = std::atoi(&endpoint[endChar + 2]);
-
-            endpoint[endChar] = '\0';
-        }
-
-        in6_addr sockaddr6;
-        if (inet_pton(AF_INET6, &endpoint[1], &sockaddr6) == 1)
-        {
-            new (this) Endpoint((uint16_t*)& sockaddr6, m_port);
-        }
-    }
-    else
-    {
-        auto endChar = endpoint.rfind(':');
-        if (endChar != std::string::npos && endChar + 2 <= endpoint.size())
-        {
-            m_port = std::atoi(&endpoint[endChar + 1]);
-            endpoint[endChar] = '\0';
-        }
-
-        sockaddr_in sockaddr;
-        if (inet_pton(AF_INET, &endpoint[0], &sockaddr.sin_addr) == 1)
-        {
-            new (this) Endpoint(sockaddr.sin_addr.s_addr, m_port);
-        }
-        else if (ResolveHostname(endpoint.substr(0, endChar)))
-        {
-            // Endpoint should be initialized by now
-        }
-        else
-        {
-            m_port = 0;
-            m_type = kNone;
-        }
-    }
-}
-
-bool Endpoint::ResolveHostname(const std::string& name) noexcept
-{
-    struct addrinfo hints = {};
-    struct addrinfo *res;
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    
-    int err = getaddrinfo(name.c_str(), nullptr, &hints, &res);
-
-    if (err != 0) 
-    {
-        // printf("%s\n", gai_strerror(err));
-        return false;
-    }
-
-    for (struct addrinfo *r = res; r != nullptr; r = r->ai_next)
-    {
-        if (r->ai_family == AF_INET)
-        {
-            new (this) Endpoint(((struct sockaddr_in *)r->ai_addr)->sin_addr.s_addr, m_port);
-        }
-        else if (m_type == kNone)
-        {
-            // Give preference to IPv4
-            new (this) Endpoint((uint16_t *) &((struct sockaddr_in6 *)r->ai_addr)->sin6_addr, m_port);
-        }
-    }
-
-    freeaddrinfo(res);
-
-    return m_type != kNone;
 }
