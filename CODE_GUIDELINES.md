@@ -40,4 +40,7 @@ Names must be self explanatory, ``size_t a;`` is not acceptable, ``size_t incomi
 
 ``auto`` is allowed when dealing with long names, it is not accepted for primitive types as we don't want the compiler to give us a signed int when we are using it as unsigned.
 
+Don't use java style blocks, a ``{`` needs to be on a new line.
+
+Don't use exceptions, don't use STL code that can throw, use the nothrow version if available or the unsafe version. Use the Outcome class to return the value or an error.
 
