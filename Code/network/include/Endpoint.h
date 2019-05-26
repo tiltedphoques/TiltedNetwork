@@ -4,8 +4,6 @@
 #include "Outcome.h"
 #include "Meta.h"
 
-#include <string>
-
 class Endpoint
 {
 public:
@@ -19,7 +17,6 @@ public:
 
     Endpoint() noexcept;
     Endpoint(Endpoint&& aRhs) noexcept;
-    Endpoint(const std::string& acEndpoint) noexcept;
     Endpoint(const Endpoint& acRhs) noexcept;
     Endpoint(uint32_t aNetIPv4, uint16_t aPort) noexcept;
     Endpoint(const uint16_t* acpNetIPv6, uint16_t aPort) noexcept;
@@ -43,10 +40,6 @@ public:
     Endpoint& operator=(Endpoint&& aRhs) noexcept;
     bool operator==(const Endpoint& acRhs) const noexcept;
     bool operator!=(const Endpoint& acRhs) const noexcept;
-
-protected:
-
-    void Parse(const std::string& acEndpoint) noexcept;
 
 private:
 

@@ -1,5 +1,6 @@
 #include "Endpoint.h"
 #include "Network.h"
+
 #include <cstring>
 
 Endpoint::Endpoint() noexcept
@@ -11,14 +12,6 @@ Endpoint::Endpoint() noexcept
 Endpoint::Endpoint(Endpoint&& aRhs) noexcept
 {
     this->operator=(std::move(aRhs));
-}
-
-Endpoint::Endpoint(const std::string& acIp) noexcept
-{
-    m_port = 0;
-    m_type = kNone;
-
-    Parse(acIp);
 }
 
 Endpoint::Endpoint(const Endpoint& acRhs) noexcept
@@ -162,49 +155,4 @@ bool Endpoint::operator==(const Endpoint& acRhs) const noexcept
 bool Endpoint::operator!=(const Endpoint& acRhs) const noexcept
 {
     return !this->operator==(acRhs);
-}
-
-void Endpoint::Parse(const std::string& acEndpoint) noexcept
-{
-    std::string endpoint(acEndpoint);
-    // If we see an IPv6 start character
-    if (endpoint[0] == '[')
-    {
-        auto endChar = endpoint.rfind(']');
-        if (endChar != std::string::npos)
-        {
-            if(endChar + 3 <= endpoint.size() && endpoint[endChar + 1] == ':')
-                m_port = std::atoi(&endpoint[endChar + 2]);
-
-            endpoint[endChar] = '\0';
-        }
-
-        in6_addr sockaddr6;
-        if (inet_pton(AF_INET6, &endpoint[1], &sockaddr6) == 1)
-        {
-            new (this) Endpoint((uint16_t*)& sockaddr6, m_port);
-        }
-    }
-    else
-    {
-        auto endChar = endpoint.rfind(':');
-        if (endChar != std::string::npos && endChar + 2 <= endpoint.size())
-        {
-            m_port = std::atoi(&endpoint[endChar + 1]);
-            endpoint[endChar] = '\0';
-        }
-
-        sockaddr_in sockaddr;
-        if (inet_pton(AF_INET, &endpoint[0], &sockaddr.sin_addr) == 1)
-        {
-            new (this) Endpoint(sockaddr.sin_addr.s_addr, m_port);
-        }
-        else
-        {
-            m_port = 0;
-            m_type = kNone;
-        }
-    }
-
-    
 }
