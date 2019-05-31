@@ -27,7 +27,7 @@ public:
     template<class T>
     T* New()
     {
-        static_assert(alignof(T) <= alignof(std::max_align_t));
+        static_assert(alignof(T) <= alignof(details::default_align_t));
 
         auto pData = (T*)Allocate(sizeof(T));
         if (pData)
@@ -41,7 +41,7 @@ public:
     template<class T, class... Args>
     T* New(Args... args)
     {
-        static_assert(alignof(T) <= alignof(std::max_align_t));
+        static_assert(alignof(T) <= alignof(details::default_align_t));
 
         auto pData = (T*)Allocate(sizeof(T));
         if (pData)

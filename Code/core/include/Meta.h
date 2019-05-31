@@ -39,6 +39,13 @@ namespace details
 
     template< template<class...> class Op, class... Args >
     constexpr bool is_detected_v = is_detected<Op, Args...>::value;
+
+#ifdef _WIN64
+    // msvc x64 says the max_align_t is 8, except malloc and alloca always return a 16 byte alignment
+    using default_align_t = struct alignas(16) { char _pad[16]; };;
+#else
+    using default_align_t = std::max_align_t;
+#endif
 }
 
 template<class T>
