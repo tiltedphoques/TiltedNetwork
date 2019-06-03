@@ -24,9 +24,9 @@ bool Server::Start(uint16_t aPort) noexcept
 
 uint32_t Server::Update(uint64_t aElapsedMilliSeconds) noexcept
 {
+    uint32_t nPackets = Work();
     m_connectionManager.Update(aElapsedMilliSeconds);
-
-    return Work();
+    return nPackets;
 }
 
 uint16_t Server::GetPort() const noexcept
@@ -53,22 +53,19 @@ bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept
 
 bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
 {
+    Buffer::Reader reader(&aPacket.Payload);
     auto pConnection = m_connectionManager.Find(aPacket.Remote);
     if (!pConnection)
     {
         if (!m_connectionManager.IsFull())
         {
-            Connection connection(*this, aPacket.Remote);
+            Connection connection(*this, aPacket.Remote, true);
             m_connectionManager.Add(std::move(connection));
             pConnection = m_connectionManager.Find(aPacket.Remote);
 
             if (pConnection)
             {
-                if (pConnection->ProcessNegociation(&aPacket.Payload))
-                {
-                    // OnClientConnected
-                    return true;
-                }
+                return pConnection->ProcessPacket(reader);
             }
         }
 
@@ -76,9 +73,13 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
     }
     else if (pConnection->IsNegotiating())
     {
-        if (pConnection->ProcessNegociation(&aPacket.Payload))
+        if (pConnection->ProcessPacket(reader))
         {
-            // OnClientConnected
+            if (pConnection->IsConnected())
+            {
+                // OnClientConnected
+            }
+
             return true;
         }
 
@@ -86,7 +87,11 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
     }
     else if (pConnection->IsConnected())
     {
-        return OnPacketReceived(Buffer::Reader(&aPacket.Payload));
+        if (pConnection->ProcessPacket(reader))
+        {
+            // FIXME check that it's the payload type...
+            return OnPacketReceived(reader);
+        }
     }
 
     return false;

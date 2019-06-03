@@ -16,6 +16,7 @@ public:
         {
             kNegotiation,
             kConnection,
+            kPayload,
             kCount
         };
 
@@ -46,7 +47,7 @@ public:
         virtual bool Send(const Endpoint& acRemote, Buffer aBuffer) = 0;
     };
 
-    Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint);
+    Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, const bool acNeedsAuthentication=false);
     Connection(const Connection& acRhs) = delete;
     Connection(Connection&& aRhs) noexcept;
 
@@ -55,9 +56,7 @@ public:
     Connection& operator=(Connection&& aRhs) noexcept;
     Connection& operator=(const Connection& aRhs) = delete;
 
-    bool ProcessPacket(Buffer* apBuffer);
-    bool ProcessNegociation(Buffer* apBuffer);
-
+    bool ProcessPacket(Buffer::Reader & aReader);
     bool IsNegotiating() const;
     bool IsConnected() const;
 
@@ -68,9 +67,17 @@ public:
 
 protected:
 
+    bool ProcessNegociation(Buffer::Reader & aReader);
+    bool ProcessConfirmation(Buffer::Reader & aReader);
+
     void SendNegotiation();
+    void SendConfirmation();
+
+    bool WriteChallenge(Buffer::Writer& aWriter);
+    bool ReadChallenge(Buffer::Reader& aReader, uint32_t &aCode);
 
     Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
+    void WriteHeader(Buffer::Writer & aWriter, const uint64_t acHeaderType);
 
 private:
 
@@ -79,4 +86,6 @@ private:
     uint64_t m_timeSinceLastEvent;
     Endpoint m_remoteEndpoint;
     DHChachaFilter m_filter;
+    bool m_isServer;
+    uint32_t m_challengeCode;
 };
