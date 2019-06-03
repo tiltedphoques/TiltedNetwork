@@ -284,6 +284,7 @@ TEST_CASE("Networking", "[network]")
         clientv6.Bind();
         clientv4.Bind();
 
+        /*
         Socket::Packet packetv6{ serverEndpointv6, buffer };
         Socket::Packet packetv4{ serverEndpointv4, buffer };
 
@@ -299,6 +300,7 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(clientv4.Send(packetv4));
 
         REQUIRE(server.Update(1) == 2);
+        */
     }
 }
 

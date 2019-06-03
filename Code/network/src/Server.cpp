@@ -13,7 +13,7 @@ Server::~Server()
 {
 }
 
-bool Server::Start(uint16_t aPort)
+bool Server::Start(uint16_t aPort) noexcept
 {
     if (m_v4Listener.Bind(aPort) == false)
     {
@@ -22,60 +22,77 @@ bool Server::Start(uint16_t aPort)
     return m_v6Listener.Bind(m_v4Listener.GetPort());
 }
 
-uint32_t Server::Update(uint64_t aElapsedMilliSeconds)
+uint32_t Server::Update(uint64_t aElapsedMilliSeconds) noexcept
 {
     m_connectionManager.Update(aElapsedMilliSeconds);
 
     return Work();
 }
 
-uint16_t Server::GetPort() const
+uint16_t Server::GetPort() const noexcept
 {
     return m_v4Listener.GetPort();
 }
 
-bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer)
+bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept
 {
+    Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
+
     if (acRemoteEndpoint.IsIPv6())
     {
-        Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
-
         return m_v6Listener.Send(packet);
     }
 
     if (acRemoteEndpoint.IsIPv4())
     {
-        Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
-
         return m_v4Listener.Send(packet);
     }
 
     return false;
 }
 
-bool Server::ProcessPacket(Socket::Packet& aPacket)
+bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
 {
     auto pConnection = m_connectionManager.Find(aPacket.Remote);
     if (!pConnection)
     {
-        Connection connection(*this, aPacket.Remote);
+        if (!m_connectionManager.IsFull())
+        {
+            Connection connection(*this, aPacket.Remote);
+            m_connectionManager.Add(std::move(connection));
+            pConnection = m_connectionManager.Find(aPacket.Remote);
 
-        m_connectionManager.Add(std::move(connection));
+            if (pConnection)
+            {
+                if (pConnection->ProcessNegociation(&aPacket.Payload))
+                {
+                    // OnClientConnected
+                    return true;
+                }
+            }
+        }
 
-        return true;
+        return false;
     }
-    else if(m_connectionManager.IsFull() == false)
+    else if (pConnection->IsNegotiating())
     {
-        // New connection
+        if (pConnection->ProcessNegociation(&aPacket.Payload))
+        {
+            // OnClientConnected
+            return true;
+        }
 
-
-        return true;
+        return false;
+    }
+    else if (pConnection->IsConnected())
+    {
+        return OnPacketReceived(Buffer::Reader(&aPacket.Payload));
     }
 
     return false;
 }
 
-uint32_t Server::Work()
+uint32_t Server::Work() noexcept
 {
     uint32_t processedPackets = 0;
 
