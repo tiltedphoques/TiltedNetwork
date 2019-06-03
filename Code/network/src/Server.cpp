@@ -40,7 +40,14 @@ bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer)
     {
         Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
 
-        m_v6Listener.Send(packet);
+        return m_v6Listener.Send(packet);
+    }
+
+    if (acRemoteEndpoint.IsIPv4())
+    {
+        Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
+
+        return m_v4Listener.Send(packet);
     }
 
     return false;
