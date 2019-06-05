@@ -35,6 +35,7 @@ public:
 
         size_t GetBytePosition() const;
         size_t GetBitPosition() const;
+        size_t GetSize() const;
 
     protected:
 

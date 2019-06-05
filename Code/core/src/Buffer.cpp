@@ -126,6 +126,11 @@ size_t Buffer::Cursor::GetBytePosition() const
     return m_bitPosition / 8;
 }
 
+size_t Buffer::Cursor::GetSize() const
+{
+    return m_pBuffer->GetSize();
+}
+
 Buffer::Reader::Reader(Buffer* apBuffer)
     : Buffer::Cursor(apBuffer)
 {

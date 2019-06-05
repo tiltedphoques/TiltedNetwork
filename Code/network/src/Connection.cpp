@@ -72,12 +72,12 @@ Connection& Connection::operator=(Connection&& aRhs) noexcept
     return *this;
 }
 
-bool Connection::ProcessPacket(Buffer::Reader& aReader)
+Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessPacket(Buffer::Reader& aReader)
 {   
     auto header = ProcessHeader(aReader);
     if (header.HasError())
     {
-        return false;
+        return header.GetError();
     }
 
     switch (header.GetResult().Type)
@@ -90,24 +90,27 @@ bool Connection::ProcessPacket(Buffer::Reader& aReader)
         m_timeSinceLastEvent = 0;
         break;
     default:
-        return false;
+        return kUnknownPacket;
     }
 
-    return true;
+    return header.GetResult().Type;
 }
 
-bool Connection::ProcessNegociation(Buffer::Reader& aReader)
+Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessNegociation(Buffer::Reader& aReader)
 {
     if (!m_filter.ReceiveConnect(&aReader))
     {
-        // Drop connection if key is not accepted
+        // Drop connection if exchange fails
         m_state = Connection::kNone;
-        return false;
+        return kBadKey;
     }
 
     if (m_isServer)
     {
-        // TODO enforce payload size
+        if (aReader.GetSize() < 1400)
+        {
+            return kPayloadRequired;
+        }
     }
     else if (ReadChallenge(aReader, m_challengeCode))
     {
@@ -116,10 +119,10 @@ bool Connection::ProcessNegociation(Buffer::Reader& aReader)
         SendConfirmation();
     }
 
-    return IsNegotiating() || IsConnected();
+    return Header::kNegotiation;
 }
 
-bool Connection::ProcessConfirmation(Buffer::Reader& aReader)
+Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessConfirmation(Buffer::Reader& aReader)
 {
     // We are a server that needs to challenge clients
     uint32_t otherCode = 0;
@@ -131,13 +134,13 @@ bool Connection::ProcessConfirmation(Buffer::Reader& aReader)
         {
             // We got a correct challenge code back
             m_state = kConnected;
-            return true;
+            return Header::kConnection;
         }
         else
         {
             // Wrong challenge code, drop connection
             m_state = Connection::kNone;
-            return false;
+            return kBadChallenge;
         }
     }
 

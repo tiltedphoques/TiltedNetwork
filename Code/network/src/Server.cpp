@@ -65,7 +65,8 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
 
             if (pConnection)
             {
-                return pConnection->ProcessPacket(reader);
+                return !pConnection->ProcessPacket(reader).HasError();
+                // TODO error handling
             }
         }
 
@@ -73,7 +74,7 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
     }
     else if (pConnection->IsNegotiating())
     {
-        if (pConnection->ProcessPacket(reader))
+        if (!pConnection->ProcessPacket(reader).HasError())
         {
             if (pConnection->IsConnected())
             {
@@ -87,9 +88,15 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
     }
     else if (pConnection->IsConnected())
     {
-        if (pConnection->ProcessPacket(reader))
+        auto headerType = pConnection->ProcessPacket(reader);
+
+        if (headerType.HasError())
         {
-            // FIXME check that it's the payload type...
+            // TODO error handling
+            return false;
+        }
+        else if (headerType.GetResult() == Connection::Header::kPayload)
+        {
             return OnPacketReceived(reader);
         }
     }

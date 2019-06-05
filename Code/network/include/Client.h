@@ -49,7 +49,7 @@ protected:
 
         if (m_connection.IsNegotiating())
         {
-            if (m_connection.ProcessPacket(reader))
+            if (!m_connection.ProcessPacket(reader).HasError())
             {
                 if (m_connection.IsConnected())
                 {
@@ -63,9 +63,15 @@ protected:
         }
         else if (m_connection.IsConnected())
         {
-            if (m_connection.ProcessPacket(reader))
+            auto headerType = m_connection.ProcessPacket(reader);
+
+            if (headerType.HasError())
             {
-                // FIXME check that it's the payload type...
+                // TODO error handling
+                return false;
+            }
+            else if (headerType.GetResult() == Connection::Header::kPayload)
+            {
                 return OnPacketReceived(reader);
             }
         }

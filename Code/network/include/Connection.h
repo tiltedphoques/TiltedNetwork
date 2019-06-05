@@ -39,7 +39,11 @@ public:
         kBadVersion,
         kBadPacketType,
         kTooLarge,
-        kUnknownChannel
+        kUnknownChannel,
+        kUnknownPacket,
+        kPayloadRequired,
+        kBadKey,
+        kBadChallenge
     };
 
     struct ICommunication
@@ -56,7 +60,7 @@ public:
     Connection& operator=(Connection&& aRhs) noexcept;
     Connection& operator=(const Connection& aRhs) = delete;
 
-    bool ProcessPacket(Buffer::Reader & aReader);
+    Outcome<uint64_t, Connection::HeaderErrors> ProcessPacket(Buffer::Reader & aReader);
     bool IsNegotiating() const;
     bool IsConnected() const;
 
@@ -67,8 +71,8 @@ public:
 
 protected:
 
-    bool ProcessNegociation(Buffer::Reader & aReader);
-    bool ProcessConfirmation(Buffer::Reader & aReader);
+    Outcome<uint64_t, Connection::HeaderErrors> ProcessNegociation(Buffer::Reader & aReader);
+    Outcome<uint64_t, Connection::HeaderErrors> ProcessConfirmation(Buffer::Reader & aReader);
 
     void SendNegotiation();
     void SendConfirmation();
