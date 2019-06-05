@@ -91,12 +91,19 @@ workspace ("DestroyerOfWorlds")
                 "../Code/core/include/",
                 "../Code/network/include/",
                 "../Code/protocol/include/",
+                "../ThirdParty/cryptopp/",
             }
 
             files
             {
                 "../Code/network/include/**.h",
                 "../Code/network/src/**.cpp",
+            }
+
+            links
+            {
+                "Core",
+                "cryptopp"
             }
 
             filter { "architecture:*86" }

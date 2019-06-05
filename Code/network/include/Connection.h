@@ -77,7 +77,7 @@ protected:
     void SendNegotiation();
     void SendConfirmation();
 
-    bool WriteChallenge(Buffer::Writer& aWriter);
+    bool WriteChallenge(Buffer::Writer& aWriter, uint32_t aCode);
     bool ReadChallenge(Buffer::Reader& aReader, uint32_t &aCode);
 
     Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
@@ -92,4 +92,5 @@ private:
     DHChachaFilter m_filter;
     bool m_isServer;
     uint32_t m_challengeCode;
+    uint32_t m_remoteCode;
 };
