@@ -2,6 +2,7 @@
 
 #include "Socket.h"
 #include "ConnectionManager.h"
+#include "StackAllocator.h"
 
 // TODO migrate code to cpp
 
@@ -20,6 +21,23 @@ public:
     {
         Socket::Packet packet{ acRemoteEndpoint, std::move(aBuffer) };
         return m_socket.Send(packet);
+    }
+
+    bool SendPayload(uint8_t *apData, size_t aLength) noexcept
+    {
+        if (!m_connection.IsConnected())
+        {
+            return false;
+        }
+
+        // FIXME memory is allocated (and freed) for every packet sent
+        Buffer *pBuffer = GetAllocator()->New<Buffer>(aLength + sizeof(Connection::Header));
+        Buffer::Writer writer(pBuffer);
+        m_connection.WriteHeader(writer, Connection::Header::kPayload);
+        writer.WriteBytes(apData, aLength);
+        bool sent = Send(m_connection.GetRemoteEndpoint(), *pBuffer);
+        GetAllocator()->Delete<Buffer>(pBuffer);
+        return sent;
     }
 
     uint32_t Update(const uint64_t aElapsedMilliSeconds) noexcept
@@ -53,7 +71,7 @@ protected:
             {
                 if (m_connection.IsConnected())
                 {
-                    // OnClientConnected
+                    OnConnected(m_connection.GetRemoteEndpoint());
                 }
 
                 return true;
@@ -72,19 +90,18 @@ protected:
             }
             else if (headerType.GetResult() == Connection::Header::kPayload)
             {
-                return OnPacketReceived(reader);
+                return OnPacketReceived(aPacket.Remote, reader);
             }
         }
 
         return false;
     }
 
-    bool OnPacketReceived(const Buffer::Reader &acBufferReader) noexcept
-    {
-        return true;
-    }
-
+    virtual bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &acBufferReader) noexcept = 0;
+    virtual bool OnConnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
+    
 private:
+
     Connection m_connection;
     Socket m_socket;
 };

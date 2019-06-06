@@ -16,12 +16,11 @@ public:
     uint16_t GetPort() const noexcept;
 
     bool Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept override;
+    bool SendPayload(const Endpoint& acRemoteEndpoint, uint8_t *apData, size_t aLength) noexcept;
 
 protected:
-    bool OnPacketReceived(const Buffer::Reader &acBufferReader) noexcept
-    {
-        return true;
-    };
+    virtual bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &acBufferReader) noexcept = 0;
+    virtual bool OnClientConnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     bool ProcessPacket(Socket::Packet& aPacket) noexcept;
 
 private:

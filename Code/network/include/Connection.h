@@ -69,8 +69,11 @@ public:
 
     void Update(uint64_t aElapsedMilliseconds);
 
+    void WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderType);
+
 protected:
 
+    Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
     Outcome<uint64_t, Connection::HeaderErrors> ProcessNegociation(Buffer::Reader & aReader);
     Outcome<uint64_t, Connection::HeaderErrors> ProcessConfirmation(Buffer::Reader & aReader);
 
@@ -79,9 +82,6 @@ protected:
 
     bool WriteChallenge(Buffer::Writer& aWriter, uint32_t aCode);
     bool ReadChallenge(Buffer::Reader& aReader, uint32_t &aCode);
-
-    Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
-    void WriteHeader(Buffer::Writer & aWriter, const uint64_t acHeaderType);
 
 private:
 

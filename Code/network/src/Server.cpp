@@ -51,6 +51,24 @@ bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept
     return false;
 }
 
+bool Server::SendPayload(const Endpoint& acRemoteEndpoint, uint8_t *apData, size_t aLength) noexcept
+{
+    auto pConnection = m_connectionManager.Find(acRemoteEndpoint);
+    if (!pConnection || !pConnection->IsConnected())
+    {
+        return false;
+    }
+
+    // FIXME memory is allocated (and freed) for every packet sent
+    Buffer *pBuffer = GetAllocator()->New<Buffer>(aLength + sizeof(Connection::Header));
+    Buffer::Writer writer(pBuffer);
+    pConnection->WriteHeader(writer, Connection::Header::kPayload);
+    writer.WriteBytes(apData, aLength);
+    bool sent = Send(acRemoteEndpoint, *pBuffer);
+    GetAllocator()->Delete<Buffer>(pBuffer);
+    return sent;
+}
+
 bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
 {
     Buffer::Reader reader(&aPacket.Payload);
@@ -78,7 +96,7 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
         {
             if (pConnection->IsConnected())
             {
-                // OnClientConnected
+                OnClientConnected(pConnection->GetRemoteEndpoint());
             }
 
             return true;
@@ -97,7 +115,7 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
         }
         else if (headerType.GetResult() == Connection::Header::kPayload)
         {
-            return OnPacketReceived(reader);
+            return OnPacketReceived(aPacket.Remote, reader);
         }
     }
 
