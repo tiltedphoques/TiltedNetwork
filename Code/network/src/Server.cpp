@@ -25,13 +25,22 @@ bool Server::Start(uint16_t aPort) noexcept
 uint32_t Server::Update(uint64_t aElapsedMilliSeconds) noexcept
 {
     uint32_t nPackets = Work();
-    m_connectionManager.Update(aElapsedMilliSeconds);
+    m_connectionManager.Update(aElapsedMilliSeconds, std::bind(&Server::OnClientDisconnected, this, std::placeholders::_1));
     return nPackets;
 }
 
 uint16_t Server::GetPort() const noexcept
 {
     return m_v4Listener.GetPort();
+}
+
+void Server::Disconnect(const Endpoint& acRemoteEndpoint) noexcept
+{
+    auto pConnection = m_connectionManager.Find(acRemoteEndpoint);
+    if (pConnection && !(pConnection->GetState() == Connection::kNone))
+    {
+        pConnection->Disconnect();
+    }
 }
 
 bool Server::Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept
@@ -60,7 +69,7 @@ bool Server::SendPayload(const Endpoint& acRemoteEndpoint, uint8_t *apData, size
     }
 
     // FIXME memory is allocated (and freed) for every packet sent
-    Buffer *pBuffer = GetAllocator()->New<Buffer>(aLength + sizeof(Connection::Header));
+    Buffer *pBuffer = GetAllocator()->New<Buffer>(aLength + 8); // Assuming 8 header bytes
     Buffer::Writer writer(pBuffer);
     pConnection->WriteHeader(writer, Connection::Header::kPayload);
     writer.WriteBytes(apData, aLength);
@@ -90,7 +99,11 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
 
         return false;
     }
-    else if (pConnection->IsNegotiating())
+    else switch (pConnection->GetState())
+    {
+    case Connection::kNone:
+        break;
+    case Connection::kNegociating:
     {
         if (!pConnection->ProcessPacket(reader).HasError())
         {
@@ -101,22 +114,24 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
 
             return true;
         }
-
-        return false;
     }
-    else if (pConnection->IsConnected())
+    break;
+
+    case Connection::kConnected:
     {
         auto headerType = pConnection->ProcessPacket(reader);
 
-        if (headerType.HasError())
-        {
-            // TODO error handling
-            return false;
-        }
-        else if (headerType.GetResult() == Connection::Header::kPayload)
+        // TODO error handling
+        if (!headerType.HasError() && headerType.GetResult() == Connection::Header::kPayload)
         {
             return OnPacketReceived(aPacket.Remote, reader);
         }
+    }
+    break;
+
+    default:
+        // TODO log about new unhandled connection state
+        return false;
     }
 
     return false;

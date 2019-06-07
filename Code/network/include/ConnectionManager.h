@@ -17,7 +17,7 @@ public:
 
     bool IsFull() const;
 
-    void Update(uint64_t aElapsedMilliSeconds);
+    void Update(uint64_t aElapsedMilliSeconds, std::function<bool(const Endpoint&)> aDisconnectedCallback = nullptr);
 
 private:
 

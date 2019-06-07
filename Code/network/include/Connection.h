@@ -16,6 +16,7 @@ public:
         {
             kNegotiation,
             kConnection,
+            kDisconnect,
             kPayload,
             kCount
         };
@@ -40,10 +41,10 @@ public:
         kBadPacketType,
         kTooLarge,
         kUnknownChannel,
-        kUnknownPacket,
         kPayloadRequired,
         kBadKey,
-        kBadChallenge
+        kBadChallenge,
+        kDeadConnection
     };
 
     struct ICommunication
@@ -67,13 +68,15 @@ public:
     State GetState() const;
     const Endpoint& GetRemoteEndpoint() const;
 
-    void Update(uint64_t aElapsedMilliseconds);
+    uint64_t Update(uint64_t aElapsedMilliseconds);
+    void Disconnect();
 
     void WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderType);
 
 protected:
 
     Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
+    Outcome<uint64_t, Connection::HeaderErrors> ProcessDisconnection(Buffer::Reader & aReader);
     Outcome<uint64_t, Connection::HeaderErrors> ProcessNegociation(Buffer::Reader & aReader);
     Outcome<uint64_t, Connection::HeaderErrors> ProcessConfirmation(Buffer::Reader & aReader);
 

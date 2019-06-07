@@ -35,13 +35,27 @@ bool ConnectionManager::IsFull() const
     return m_connections.size() >= m_maxConnections;
 }
 
-void ConnectionManager::Update(uint64_t aElapsedMilliSeconds)
+void ConnectionManager::Update(uint64_t aElapsedMilliSeconds, std::function<bool(const Endpoint&)> aDisconnectedCallback)
 {
-    for (auto& kvp : m_connections)
-    {
-        auto& connection = kvp.second;
+    auto it = m_connections.begin();
 
-        connection.Update(aElapsedMilliSeconds);
+    while (it != m_connections.end())
+    {
+        Connection& connection = (*it).second;
+
+        if (connection.Update(aElapsedMilliSeconds) == Connection::kNone)
+        {
+            if (aDisconnectedCallback)
+            {
+                aDisconnectedCallback((*it).first);
+            }
+
+            it = m_connections.erase(it);
+        }
+        else
+        {
+            it++;
+        }
     }
 }
 

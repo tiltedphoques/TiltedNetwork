@@ -72,6 +72,9 @@ Connection& Connection::operator=(Connection&& aRhs) noexcept
 
 Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessPacket(Buffer::Reader& aReader)
 {   
+    if (m_state == kNone)
+        return kDeadConnection;
+    
     auto header = ProcessHeader(aReader);
     if (header.HasError())
     {
@@ -80,18 +83,42 @@ Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessPacket(Buffer::Re
 
     switch (header.GetResult().Type)
     {
+    case Header::kDisconnect:
+        return ProcessDisconnection(aReader);
     case Header::kNegotiation:
-        return ProcessNegociation(aReader);
+        if (IsNegotiating() || !m_isServer)
+            return ProcessNegociation(aReader);
     case Header::kConnection:
-        return ProcessConfirmation(aReader);
+        if (m_isServer && IsNegotiating())
+            return ProcessConfirmation(aReader);
     case Header::kPayload:
         m_timeSinceLastEvent = 0;
         break;
     default:
-        return kUnknownPacket;
+        return kBadPacketType;
     }
 
     return header.GetResult().Type;
+}
+
+Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessDisconnection(Buffer::Reader & aReader)
+{
+    uint32_t confirmationCode = 0;
+
+    if (ReadChallenge(aReader, confirmationCode))
+    {
+        m_filter.PreReceive((uint8_t *)&confirmationCode, sizeof(confirmationCode), UINT32_MAX);
+
+        if (confirmationCode == m_remoteCode)
+        {
+            // We got a correct challenge code back
+            m_state = kNone;
+            return Header::kDisconnect;
+        }
+    }
+
+    // Wrong challenge code, probably an attack attempt
+    return kBadChallenge;
 }
 
 Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessNegociation(Buffer::Reader& aReader)
@@ -145,15 +172,11 @@ Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessConfirmation(Buff
             m_state = kConnected;
             return Header::kConnection;
         }
-        else
-        {
-            // Wrong challenge code, drop connection
-            m_state = Connection::kNone;
-            return kBadChallenge;
-        }
     }
 
-    return false;
+    // Wrong challenge code, drop connection
+    m_state = Connection::kNone;
+    return kBadChallenge;
 }
 
 bool Connection::IsNegotiating() const
@@ -176,7 +199,7 @@ const Endpoint& Connection::GetRemoteEndpoint() const
     return m_remoteEndpoint;
 }
 
-void Connection::Update(uint64_t aElapsedMilliseconds)
+uint64_t Connection::Update(uint64_t aElapsedMilliseconds)
 {
     m_timeSinceLastEvent += aElapsedMilliseconds;
 
@@ -184,7 +207,7 @@ void Connection::Update(uint64_t aElapsedMilliseconds)
     if (m_timeSinceLastEvent > 15 * 1000)
     {
         m_state = kNone;
-        return;
+        return m_state;
     }
 
     switch (m_state)
@@ -199,6 +222,8 @@ void Connection::Update(uint64_t aElapsedMilliseconds)
     default:
         break;
     }
+
+    return m_state;
 }
 
 void Connection::WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderType)
@@ -214,6 +239,29 @@ void Connection::WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderTyp
     aWriter.WriteBits(header.Version, 6);
     aWriter.WriteBits(header.Type, 3);
     aWriter.WriteBits(header.Length, 11);
+}
+
+void Connection::Disconnect()
+{
+    StackAllocator<32> allocator;
+    auto* pBuffer = allocator.New<Buffer>(16);
+
+    Buffer::Writer writer(pBuffer);
+    WriteHeader(writer, Header::kDisconnect);
+
+    // we don't take remote code into account here as the negotiation may now have been successful yet
+    uint32_t codeToSend = m_challengeCode;
+    m_filter.PostSend((uint8_t *)&codeToSend, sizeof(codeToSend), UINT32_MAX);
+    WriteChallenge(writer, codeToSend);
+
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        // send a bunch of them so they have more chances of reaching the remote
+        m_communication.Send(m_remoteEndpoint, *pBuffer);
+    }
+
+    m_state = kNone;
+    allocator.Delete(pBuffer);
 }
 
 void Connection::SendNegotiation()
