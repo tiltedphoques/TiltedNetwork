@@ -243,7 +243,7 @@ void Connection::WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderTyp
 
 void Connection::Disconnect()
 {
-    StackAllocator<32> allocator;
+    StackAllocator<256> allocator;
     auto* pBuffer = allocator.New<Buffer>(16);
 
     Buffer::Writer writer(pBuffer);
