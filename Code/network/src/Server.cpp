@@ -122,7 +122,8 @@ bool Server::ProcessPacket(Socket::Packet& aPacket) noexcept
         auto headerType = pConnection->ProcessPacket(reader);
 
         // TODO error handling
-        if (!headerType.HasError() && headerType.GetResult() == Connection::Header::kPayload)
+        if (!headerType.HasError() 
+            && (headerType.GetResult() == Connection::Header::kPayload || headerType.GetResult() == Connection::Header::kDisconnect))
         {
             return OnPacketReceived(aPacket.Remote, reader);
         }

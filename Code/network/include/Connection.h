@@ -52,7 +52,7 @@ public:
         virtual bool Send(const Endpoint& acRemote, Buffer aBuffer) = 0;
     };
 
-    Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, const bool acNeedsAuthentication=false);
+    Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, const bool acIsServer=false);
     Connection(const Connection& acRhs) = delete;
     Connection(Connection&& aRhs) noexcept;
 

@@ -4,6 +4,7 @@
 #include "Resolver.h"
 #include "Server.h"
 #include "Selector.h"
+#include "Client.h"
 
 #include <cstring>
 #include <thread>
@@ -260,48 +261,6 @@ TEST_CASE("Networking", "[network]")
         REQUIRE(std::memcmp(data.Payload.GetData(), buffer.GetData(), buffer.GetSize()) == 0);
         REQUIRE(data.Remote.IsIPv6());
     }
-
-    GIVEN("A client server model")
-    {
-        Buffer buffer(100);
-
-        Server server;
-        REQUIRE(server.Start(0));
-
-        REQUIRE(server.GetPort() != 0);
-
-        Resolver v4Resolver("127.0.0.1");
-        Resolver v6Resolver("[::1]");
-        Endpoint serverEndpointv4(v4Resolver[0]);
-        Endpoint serverEndpointv6(v6Resolver[0]);
-
-        serverEndpointv6.SetPort(server.GetPort());
-        serverEndpointv4.SetPort(server.GetPort());
-
-        Socket clientv6(Endpoint::kIPv6);
-        Socket clientv4(Endpoint::kIPv4);
-
-        clientv6.Bind();
-        clientv4.Bind();
-
-        /*
-        Socket::Packet packetv6{ serverEndpointv6, buffer };
-        Socket::Packet packetv4{ serverEndpointv4, buffer };
-
-        REQUIRE(clientv6.Send(packetv6));
-
-        REQUIRE(server.Update(1) == 1);
-
-        REQUIRE(clientv4.Send(packetv4));
-
-        REQUIRE(server.Update(1) == 1);
-
-        REQUIRE(clientv6.Send(packetv6));
-        REQUIRE(clientv4.Send(packetv4));
-
-        REQUIRE(server.Update(1) == 2);
-        */
-    }
 }
 
 TEST_CASE("Connection", "[network.connection]")
@@ -328,38 +287,265 @@ TEST_CASE("Connection", "[network.connection]")
 
         DummyCommunication comm;
 
-        Connection connection(comm, remoteEndpoint);
-        Connection connection2(comm, remoteEndpoint);
-        REQUIRE(connection.IsNegotiating());
-
-        connection.Update(1);
+        Connection clientConnection(comm, remoteEndpoint);
+        Connection serverConnection(comm, remoteEndpoint, true);
+        REQUIRE(clientConnection.IsNegotiating());
+        REQUIRE(clientConnection.Update(1) == Connection::kNegociating);
 
         REQUIRE(s_count == 1);
         REQUIRE(buffer.GetData()[0] == 'M');
         REQUIRE(buffer.GetData()[1] == 'G');
 
-        REQUIRE(connection2.ProcessNegociation(&buffer));
+        Buffer::Reader reader(&buffer);
+        REQUIRE(serverConnection.ProcessPacket(reader).GetResult() == Connection::Header::kNegotiation);
+        REQUIRE(serverConnection.Update(1) == Connection::kNegociating);
+        reader.Reset();
+
+        REQUIRE(clientConnection.ProcessPacket(reader).GetResult() == Connection::Header::kNegotiation);
+        REQUIRE(clientConnection.Update(1) == Connection::kConnected);
+        REQUIRE(clientConnection.IsConnected());
+        reader.Reset();
+
+        REQUIRE(serverConnection.ProcessPacket(reader).GetResult() == Connection::Header::kConnection);
+        REQUIRE(serverConnection.Update(1) == Connection::kConnected);
+        REQUIRE(serverConnection.IsConnected());
+        reader.Reset();
+
+        serverConnection.Disconnect();
+        REQUIRE(serverConnection.GetState() == Connection::kNone);
+        REQUIRE(clientConnection.ProcessPacket(reader).GetResult() == Connection::Header::kDisconnect);
+        REQUIRE(clientConnection.GetState() == Connection::kNone);
+        reader.Reset();
+
+        REQUIRE(clientConnection.ProcessPacket(reader).GetError() == Connection::HeaderErrors::kDeadConnection);
+        REQUIRE(clientConnection.GetState() == Connection::kNone);
     }
 }
 
 TEST_CASE("Server", "[network.server]")
 {
+    class MyServer : public Server
+    {
+    public:
+        MyServer() :
+            Server()
+            , m_clients()
+        {};
+
+        void SendACK()
+        {
+            for (auto& client : m_clients)
+            {
+                SendPayload(client.first, (uint8_t *)&client.second, 4);
+            }
+        }
+
+        size_t NumClients()
+        {
+            return m_clients.size();
+        }
+
+    protected:
+        bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept override
+        {
+            uint32_t seq;
+
+            if (aBufferReader.ReadBytes((uint8_t *)&seq, 4))
+            {
+                if (seq > m_clients[acRemoteEndpoint])
+                    m_clients[acRemoteEndpoint] = seq;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        bool OnClientConnected(const Endpoint& acRemoteEndpoint) noexcept override
+        {
+            m_clients[acRemoteEndpoint] = 0;
+            return true;
+        }
+
+        bool OnClientDisconnected(const Endpoint &acRemoteEndpoint) noexcept override
+        {
+            m_clients.erase(acRemoteEndpoint);
+            return true;
+        }
+
+    private:
+        std::unordered_map<Endpoint, uint32_t> m_clients;
+    };
+
+    class MyClient : public Client
+    {
+    public:
+        uint32_t m_seq;
+        uint32_t m_lastAck;
+        bool m_connected;
+
+        MyClient(const Endpoint& acRemoteEndpoint) :
+            Client(acRemoteEndpoint)
+            , m_seq{ 0 }
+            , m_lastAck{ 0 }
+            , m_connected { false }
+        {}
+
+        void IncrAndSend()
+        {
+            if (m_lastAck == m_seq)
+                m_seq++;
+
+            SendPayload((uint8_t *)&m_seq, 4);
+        }
+
+    protected:
+        bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept override
+        {
+            if (aBufferReader.ReadBytes((uint8_t *)&m_lastAck, 4))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        bool OnConnected(const Endpoint& acRemoteEndpoint) noexcept override
+        {
+            m_connected = true;
+            return true;
+        }
+
+        bool OnDisconnected(const Endpoint &acRemoteEndpoint) noexcept override
+        {
+            m_seq = 0;
+            m_lastAck = 0;
+            m_connected = false;
+            return true;
+        }
+    };
+
     GIVEN("A client server model")
     {
-        Buffer buffer(100);
+        static Resolver localhostResolver("127.0.0.1");
+        static Endpoint serverEndpoint = localhostResolver[0];
+        static MyServer server;
 
-        Server server;
-        REQUIRE(server.Start(0));
-        REQUIRE(server.GetPort() != 0);
+        WHEN("Server is started")
+        {
+            REQUIRE(server.Start(0));
+            REQUIRE(server.GetPort() != 0);
+            REQUIRE(server.Update(1) == 0);
+            REQUIRE(server.NumClients() == 0);
+            serverEndpoint.SetPort(server.GetPort());
+        }
 
-        Resolver localhostResolver("127.0.0.1");
-        Endpoint serverEndpoint = localhostResolver[0];
+        static MyClient client1(serverEndpoint), client2(serverEndpoint), client3(serverEndpoint);
 
-        serverEndpoint.SetPort(server.GetPort());
+        WHEN("Client 1 connects")
+        {
+            REQUIRE(client1.m_connected == false);
 
-        Socket client(Endpoint::kIPv4);
-        client.Bind();
+            REQUIRE(client1.Update(1) == 0);
+            REQUIRE(client1.m_connected == false);
 
-        Socket::Packet packet{ serverEndpoint, buffer };
+            REQUIRE(server.Update(1) == 1);
+            REQUIRE(server.NumClients() == 0);
+
+            REQUIRE(client1.Update(1) == 1);
+            REQUIRE(client1.m_connected == true);
+
+            REQUIRE(server.Update(1) == 1);
+            REQUIRE(server.NumClients() == 1);
+        }
+
+        WHEN("Client 1 sends some packets")
+        {
+            client1.IncrAndSend();
+            REQUIRE(client1.m_seq == 1);
+            REQUIRE(client1.m_lastAck == 0);
+            REQUIRE(server.Update(1) == 1);
+            server.SendACK();
+
+            REQUIRE(client1.Update(1) == 1);
+            REQUIRE(client1.m_seq == 1);
+            REQUIRE(client1.m_lastAck == 1);
+
+            client1.IncrAndSend();
+            client1.IncrAndSend();
+            client1.IncrAndSend();
+            REQUIRE(client1.m_seq == 2);
+            REQUIRE(client1.m_lastAck == 1);
+
+            REQUIRE(server.Update(1) == 3);
+            server.SendACK();
+
+            REQUIRE(client1.Update(1) == 1);
+            REQUIRE(client1.m_lastAck == 2);
+        }
+
+        WHEN("More clients connect")
+        {
+            REQUIRE(client1.m_connected == true);
+            REQUIRE(client2.m_connected == false);
+            REQUIRE(client2.m_connected == false);
+            REQUIRE(server.NumClients() == 1);
+            REQUIRE(client2.Update(1) == 0);
+            REQUIRE(client3.Update(1) == 0);
+            REQUIRE(server.Update(1) == 2);
+            REQUIRE(server.NumClients() == 1);
+            REQUIRE(client2.Update(1) == 1);
+            REQUIRE(client3.Update(1) == 1);
+            REQUIRE(client2.m_connected == true);
+            REQUIRE(client3.m_connected == true);
+            REQUIRE(server.Update(1) == 2);
+            REQUIRE(server.NumClients() == 3);
+        }
+
+        WHEN("Clients exchange packets")
+        {
+            client1.IncrAndSend();
+            client2.IncrAndSend();
+            REQUIRE(client1.m_seq == 3);
+            REQUIRE(client1.m_lastAck == 2);
+            REQUIRE(client2.m_seq == 1);
+            REQUIRE(client2.m_lastAck == 0);
+            REQUIRE(server.Update(1) == 2);
+            server.SendACK();
+
+            REQUIRE(client1.Update(1) == 1);
+            REQUIRE(client2.Update(1) == 1);
+            REQUIRE(client3.Update(1) == 1);
+            REQUIRE(client1.m_lastAck == 3);
+            REQUIRE(client2.m_lastAck == 1);
+            REQUIRE(client3.m_lastAck == 0);
+        }
+
+        WHEN("Clients 1 and 2 disconnect")
+        {
+            REQUIRE(server.NumClients() == 3);
+            REQUIRE(client1.m_connected == true);
+            REQUIRE(client2.m_connected == true);
+            
+            client1.Disconnect();
+            client2.Disconnect();
+
+            REQUIRE(client1.Update(1) == 0);
+            REQUIRE(client2.Update(1) == 0);
+
+            REQUIRE(client1.m_connected == false);
+            REQUIRE(client2.m_connected == false);
+
+            REQUIRE(server.Update(1) == 2);
+            REQUIRE(server.NumClients() == 1);
+        }
+
+        WHEN("Client 3 times out")
+        {
+            REQUIRE(server.NumClients() == 1);
+            REQUIRE(client3.m_connected == true);
+            REQUIRE(server.Update(60 * 1000) == 0);
+            REQUIRE(server.NumClients() == 0);
+        }
     }
 }
