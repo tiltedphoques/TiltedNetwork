@@ -13,19 +13,19 @@ Server::~Server()
 {
 }
 
-bool Server::Start(uint16_t aPort) noexcept
+bool Server::Start(const uint16_t acPort) noexcept
 {
-    if (m_v4Listener.Bind(aPort) == false)
+    if (m_v4Listener.Bind(acPort) == false)
     {
         return false;
     }
     return m_v6Listener.Bind(m_v4Listener.GetPort());
 }
 
-uint32_t Server::Update(uint64_t aElapsedMilliSeconds) noexcept
+uint32_t Server::Update(const uint64_t acElapsedMilliSeconds) noexcept
 {
     uint32_t nPackets = Work();
-    m_connectionManager.Update(aElapsedMilliSeconds, std::bind(&Server::OnClientDisconnected, this, std::placeholders::_1));
+    m_connectionManager.Update(acElapsedMilliSeconds, std::bind(&Server::OnClientDisconnected, this, std::placeholders::_1));
     return nPackets;
 }
 

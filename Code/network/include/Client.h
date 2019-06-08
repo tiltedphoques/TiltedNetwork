@@ -13,12 +13,12 @@ public:
     bool Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept override;
     bool SendPayload(uint8_t *apData, size_t aLength) noexcept;
 
-    uint32_t Update(const uint64_t aElapsedMilliSeconds) noexcept;
+    uint32_t Update(const uint64_t acElapsedMilliSeconds) noexcept;
 
 protected:
     bool ProcessPacket(Socket::Packet& aPacket) noexcept;
 
-    virtual bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &acBufferReader) noexcept = 0;
+    virtual bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept = 0;
     virtual bool OnConnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     virtual bool OnDisconnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     

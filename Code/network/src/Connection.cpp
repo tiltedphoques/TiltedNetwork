@@ -199,9 +199,9 @@ const Endpoint& Connection::GetRemoteEndpoint() const
     return m_remoteEndpoint;
 }
 
-uint64_t Connection::Update(uint64_t aElapsedMilliseconds)
+uint64_t Connection::Update(const uint64_t acElapsedMilliseconds)
 {
-    m_timeSinceLastEvent += aElapsedMilliseconds;
+    m_timeSinceLastEvent += acElapsedMilliseconds;
 
     // Connection is considered timed out if no data is received in 15s (TODO: make this configurable)
     if (m_timeSinceLastEvent > 15 * 1000)

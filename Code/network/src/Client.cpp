@@ -38,7 +38,7 @@ bool Client::SendPayload(uint8_t *apData, size_t aLength) noexcept
     return sent;
 }
 
-uint32_t Client::Update(const uint64_t aElapsedMilliSeconds) noexcept
+uint32_t Client::Update(const uint64_t acElapsedMilliSeconds) noexcept
 {
     uint32_t processedPackets = 0;
     Outcome<Socket::Packet, Socket::Error> result = m_socket.Receive();
@@ -52,7 +52,7 @@ uint32_t Client::Update(const uint64_t aElapsedMilliSeconds) noexcept
         result = m_socket.Receive();
     }
 
-    if (m_connection.Update(aElapsedMilliSeconds) == Connection::kNone)
+    if (m_connection.Update(acElapsedMilliSeconds) == Connection::kNone)
     {
         OnDisconnected(m_connection.GetRemoteEndpoint());
     }
