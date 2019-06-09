@@ -4,6 +4,7 @@
 #include "Outcome.h"
 #include "Endpoint.h"
 #include "DHChachaFilter.h"
+#include "Socket.h"
 
 class Socket;
 class Connection
@@ -43,7 +44,6 @@ public:
         kBadPacketType,
         kTooLarge,
         kUnknownChannel,
-        kPayloadRequired,
         kBadKey,
         kBadChallenge,
         kDeadConnection
@@ -89,6 +89,9 @@ protected:
     bool ReadChallenge(Buffer::Reader& aReader, uint32_t &aCode);
 
 private:
+
+    static constexpr size_t MaxNegotiationSize = 200;
+    static constexpr size_t ClientPadding = Socket::MaxPacketSize - MaxNegotiationSize;
 
     ICommunication& m_communication;
     State m_state;

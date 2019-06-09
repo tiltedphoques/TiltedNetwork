@@ -9,6 +9,8 @@ class Socket
 {
 public:
 
+    static constexpr size_t MaxPacketSize = 1200;
+
     enum Error
     {
         kInvalidSocket,
@@ -39,8 +41,6 @@ protected:
 private:
 
     friend class Selector;
-
-    static constexpr size_t MaxPacketSize = 1200;
 
     Socket_t m_sock;
     uint16_t m_port;

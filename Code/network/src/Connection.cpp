@@ -123,6 +123,9 @@ Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessDis
 
 Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessNegociation(Buffer::Reader& aReader)
 {
+    if (m_isServer)
+        aReader.Advance(ClientPadding); // mandatory client padding
+
     if (!m_filter.ReceiveConnect(&aReader))
     {
         // Drop connection if exchange fails
@@ -132,11 +135,6 @@ Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessNeg
 
     if (m_isServer)
     {
-        if (aReader.GetSize() < 1200)
-        {
-            return kPayloadRequired;
-        }
-
         if (!ReadChallenge(aReader, m_remoteCode))
         {
             return kBadChallenge;
@@ -156,11 +154,8 @@ Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessCon
 {
     // We are a server that needs to check clients' challenge
     uint32_t confirmationCode = 0;
-
-    if (aReader.GetSize() < 1200)
-    {
-        return kPayloadRequired;
-    }
+    
+    aReader.Advance(ClientPadding); // mandatory client padding
 
     if (ReadChallenge(aReader, confirmationCode))
     {
@@ -267,10 +262,13 @@ void Connection::Disconnect()
 void Connection::SendNegotiation()
 {
     StackAllocator<1 << 13> allocator;
-    auto* pBuffer = allocator.New<Buffer>(m_isServer ? 200 : 1200);
+    auto* pBuffer = allocator.New<Buffer>(m_isServer ? MaxNegotiationSize : Socket::MaxPacketSize);
 
     Buffer::Writer writer(pBuffer);
     WriteHeader(writer, Header::kNegotiation);
+
+    if (!m_isServer)
+        writer.Advance(ClientPadding); // mandatory client padding
 
     m_filter.PreConnect(&writer);
 
@@ -284,10 +282,11 @@ void Connection::SendNegotiation()
 void Connection::SendConfirmation()
 {
     StackAllocator<1 << 13> allocator;
-    auto* pBuffer = allocator.New<Buffer>(1200);
+    auto* pBuffer = allocator.New<Buffer>(Socket::MaxPacketSize);
 
     Buffer::Writer writer(pBuffer);
     WriteHeader(writer, Header::kConnection);
+    writer.Advance(ClientPadding);
 
     uint32_t codeToSend = m_challengeCode ^ m_remoteCode;
     m_filter.PostSend((uint8_t *)&codeToSend, sizeof(codeToSend), 0);
@@ -319,7 +318,7 @@ Outcome<Connection::Header, Connection::HeaderErrors> Connection::ProcessHeader(
 
     aReader.ReadBits(header.Length, 11);
 
-    if (header.Length > 1200)
+    if (header.Length > Socket::MaxPacketSize)
         return kTooLarge;
 
     return header;
