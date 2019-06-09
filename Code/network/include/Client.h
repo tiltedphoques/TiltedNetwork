@@ -13,7 +13,7 @@ public:
     bool Send(const Endpoint& acRemoteEndpoint, Buffer aBuffer) noexcept override;
     bool SendPayload(uint8_t *apData, size_t aLength) noexcept;
 
-    uint32_t Update(const uint64_t acElapsedMilliSeconds) noexcept;
+    uint32_t Update(uint64_t aElapsedMilliSeconds) noexcept;
 
 protected:
     bool ProcessPacket(Socket::Packet& aPacket) noexcept;

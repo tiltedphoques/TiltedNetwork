@@ -18,12 +18,12 @@ static NullCommunicationInterface s_dummyInterface;
 
 static const char* s_headerSignature = "MG";
 
-Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, const bool acIsServer)
+Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, bool aIsServer)
     : m_communication{ aCommunicationInterface }
     , m_state{kNegociating}
     , m_timeSinceLastEvent{0}
     , m_remoteEndpoint{acRemoteEndpoint}
-    , m_isServer{acIsServer}
+    , m_isServer{aIsServer}
     , m_remoteCode{ 0 }
 {
     CryptoPP::AutoSeededRandomPool rng;
@@ -70,7 +70,7 @@ Connection& Connection::operator=(Connection&& aRhs) noexcept
     return *this;
 }
 
-Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessPacket(Buffer::Reader& aReader)
+Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessPacket(Buffer::Reader& aReader)
 {   
     if (m_state == kNone)
         return kDeadConnection;
@@ -101,7 +101,7 @@ Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessPacket(Buffer::Re
     return header.GetResult().Type;
 }
 
-Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessDisconnection(Buffer::Reader & aReader)
+Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessDisconnection(Buffer::Reader & aReader)
 {
     uint32_t confirmationCode = 0;
 
@@ -121,7 +121,7 @@ Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessDisconnection(Buf
     return kBadChallenge;
 }
 
-Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessNegociation(Buffer::Reader& aReader)
+Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessNegociation(Buffer::Reader& aReader)
 {
     if (!m_filter.ReceiveConnect(&aReader))
     {
@@ -152,7 +152,7 @@ Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessNegociation(Buffe
     return Header::kNegotiation;
 }
 
-Outcome<uint64_t, Connection::HeaderErrors> Connection::ProcessConfirmation(Buffer::Reader& aReader)
+Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessConfirmation(Buffer::Reader& aReader)
 {
     // We are a server that needs to check clients' challenge
     uint32_t confirmationCode = 0;
@@ -199,9 +199,9 @@ const Endpoint& Connection::GetRemoteEndpoint() const
     return m_remoteEndpoint;
 }
 
-uint64_t Connection::Update(const uint64_t acElapsedMilliseconds)
+Connection::State Connection::Update(uint64_t aElapsedMilliseconds)
 {
-    m_timeSinceLastEvent += acElapsedMilliseconds;
+    m_timeSinceLastEvent += aElapsedMilliseconds;
 
     // Connection is considered timed out if no data is received in 15s (TODO: make this configurable)
     if (m_timeSinceLastEvent > 15 * 1000)
@@ -226,13 +226,13 @@ uint64_t Connection::Update(const uint64_t acElapsedMilliseconds)
     return m_state;
 }
 
-void Connection::WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderType)
+void Connection::WriteHeader(Buffer::Writer& aWriter, Connection::HeaderType aHeaderType)
 {
     Header header;
     header.Signature[0] = s_headerSignature[0];
     header.Signature[1] = s_headerSignature[1];
     header.Version = 1;
-    header.Type = acHeaderType;
+    header.Type = aHeaderType;
     header.Length = 0;
 
     aWriter.WriteBytes((const uint8_t*)header.Signature, 2);

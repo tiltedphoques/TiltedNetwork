@@ -340,7 +340,7 @@ TEST_CASE("Server", "[network.server]")
             }
         }
 
-        size_t NumClients()
+        size_t GetNumClients() const
         {
             return m_clients.size();
         }
@@ -436,7 +436,7 @@ TEST_CASE("Server", "[network.server]")
             REQUIRE(server.Start(0));
             REQUIRE(server.GetPort() != 0);
             REQUIRE(server.Update(1) == 0);
-            REQUIRE(server.NumClients() == 0);
+            REQUIRE(server.GetNumClients() == 0);
             serverEndpoint.SetPort(server.GetPort());
         }
 
@@ -450,13 +450,13 @@ TEST_CASE("Server", "[network.server]")
             REQUIRE(client1.m_connected == false);
 
             REQUIRE(server.Update(1) == 1);
-            REQUIRE(server.NumClients() == 0);
+            REQUIRE(server.GetNumClients() == 0);
 
             REQUIRE(client1.Update(1) == 1);
             REQUIRE(client1.m_connected == true);
 
             REQUIRE(server.Update(1) == 1);
-            REQUIRE(server.NumClients() == 1);
+            REQUIRE(server.GetNumClients() == 1);
         }
 
         WHEN("Client 1 sends some packets")
@@ -489,17 +489,17 @@ TEST_CASE("Server", "[network.server]")
             REQUIRE(client1.m_connected == true);
             REQUIRE(client2.m_connected == false);
             REQUIRE(client2.m_connected == false);
-            REQUIRE(server.NumClients() == 1);
+            REQUIRE(server.GetNumClients() == 1);
             REQUIRE(client2.Update(1) == 0);
             REQUIRE(client3.Update(1) == 0);
             REQUIRE(server.Update(1) == 2);
-            REQUIRE(server.NumClients() == 1);
+            REQUIRE(server.GetNumClients() == 1);
             REQUIRE(client2.Update(1) == 1);
             REQUIRE(client3.Update(1) == 1);
             REQUIRE(client2.m_connected == true);
             REQUIRE(client3.m_connected == true);
             REQUIRE(server.Update(1) == 2);
-            REQUIRE(server.NumClients() == 3);
+            REQUIRE(server.GetNumClients() == 3);
         }
 
         WHEN("Clients exchange packets")
@@ -523,7 +523,7 @@ TEST_CASE("Server", "[network.server]")
 
         WHEN("Clients 1 and 2 disconnect")
         {
-            REQUIRE(server.NumClients() == 3);
+            REQUIRE(server.GetNumClients() == 3);
             REQUIRE(client1.m_connected == true);
             REQUIRE(client2.m_connected == true);
             
@@ -537,15 +537,15 @@ TEST_CASE("Server", "[network.server]")
             REQUIRE(client2.m_connected == false);
 
             REQUIRE(server.Update(1) == 2);
-            REQUIRE(server.NumClients() == 1);
+            REQUIRE(server.GetNumClients() == 1);
         }
 
         WHEN("Client 3 times out")
         {
-            REQUIRE(server.NumClients() == 1);
+            REQUIRE(server.GetNumClients() == 1);
             REQUIRE(client3.m_connected == true);
             REQUIRE(server.Update(60 * 1000) == 0);
-            REQUIRE(server.NumClients() == 0);
+            REQUIRE(server.GetNumClients() == 0);
         }
     }
 }

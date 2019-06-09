@@ -11,8 +11,8 @@ public:
     Server();
     ~Server();
 
-    bool Start(const uint16_t acPort) noexcept;
-    uint32_t Update(const uint64_t acElapsedMilliSeconds) noexcept;
+    bool Start(uint16_t aPort) noexcept;
+    uint32_t Update(uint64_t aElapsedMilliSeconds) noexcept;
     uint16_t GetPort() const noexcept;
 
     void Disconnect(const Endpoint& acRemoteEndpoint) noexcept;

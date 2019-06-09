@@ -10,6 +10,8 @@ class Connection
 {
 public:
 
+    typedef uint64_t HeaderType;
+
     struct Header
     {
         enum
@@ -23,7 +25,7 @@ public:
 
         char Signature[2];
         uint64_t Version;
-        uint64_t Type;
+        HeaderType Type;
         uint64_t Length;
     };
 
@@ -52,7 +54,7 @@ public:
         virtual bool Send(const Endpoint& acRemote, Buffer aBuffer) = 0;
     };
 
-    Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, const bool acIsServer=false);
+    Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, bool aIsServer=false);
     Connection(const Connection& acRhs) = delete;
     Connection(Connection&& aRhs) noexcept;
 
@@ -61,24 +63,24 @@ public:
     Connection& operator=(Connection&& aRhs) noexcept;
     Connection& operator=(const Connection& aRhs) = delete;
 
-    Outcome<uint64_t, Connection::HeaderErrors> ProcessPacket(Buffer::Reader & aReader);
+    Outcome<HeaderType, Connection::HeaderErrors> ProcessPacket(Buffer::Reader & aReader);
     bool IsNegotiating() const;
     bool IsConnected() const;
 
     State GetState() const;
     const Endpoint& GetRemoteEndpoint() const;
 
-    uint64_t Update(uint64_t aElapsedMilliseconds);
+    State Update(uint64_t aElapsedMilliseconds);
     void Disconnect();
 
-    void WriteHeader(Buffer::Writer& aWriter, const uint64_t acHeaderType);
+    void WriteHeader(Buffer::Writer& aWriter, HeaderType aHeaderType);
 
 protected:
 
     Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
-    Outcome<uint64_t, Connection::HeaderErrors> ProcessDisconnection(Buffer::Reader & aReader);
-    Outcome<uint64_t, Connection::HeaderErrors> ProcessNegociation(Buffer::Reader & aReader);
-    Outcome<uint64_t, Connection::HeaderErrors> ProcessConfirmation(Buffer::Reader & aReader);
+    Outcome<HeaderType, Connection::HeaderErrors> ProcessDisconnection(Buffer::Reader & aReader);
+    Outcome<HeaderType, Connection::HeaderErrors> ProcessNegociation(Buffer::Reader & aReader);
+    Outcome<HeaderType, Connection::HeaderErrors> ProcessConfirmation(Buffer::Reader & aReader);
 
     void SendNegotiation();
     void SendConfirmation();
@@ -93,7 +95,7 @@ private:
     uint64_t m_timeSinceLastEvent;
     Endpoint m_remoteEndpoint;
     DHChachaFilter m_filter;
-    bool m_isServer;
     uint32_t m_challengeCode;
     uint32_t m_remoteCode;
+    bool m_isServer;
 };
