@@ -1,6 +1,7 @@
 #include "catch.hpp"
 
 #include "DHChachaFilter.h"
+#include "Message.h"
 #include <cstring>
 
 
@@ -50,5 +51,41 @@ TEST_CASE("Protocol DHChaCha", "[protocol.dhchacha]")
                 REQUIRE(std::memcmp(buffer.GetData(), data.data(), data.length()) == 0);
             }
         }
+    }
+}
+
+TEST_CASE("Message", "[protocol.message]")
+{
+    static std::string data{ "abcdefhijklmnopqrstuvwxyz" };
+
+    GIVEN("A simple Message")
+    {
+        Message message(24, (uint8_t *) data.data(), data.length());
+        REQUIRE(message.GetSeq() == 24);
+
+        Buffer::Reader reader = message.GetData();
+        REQUIRE(reader.GetSize() == data.length());
+
+        Buffer buffer(data.length());
+        REQUIRE(reader.ReadBytes(buffer.GetWriteData(), data.length()) == true);
+        REQUIRE(std::memcmp(buffer.GetData(), data.data(), data.length()) == 0);
+    }
+
+    GIVEN("Message passing")
+    {
+        Message senderMessage(24, (uint8_t *)data.data(), data.length());
+        Buffer buffer(data.length() + sizeof(Message));
+        Buffer::Writer writer(&buffer);
+        Buffer::Reader reader(&buffer);
+
+        REQUIRE(senderMessage.Write(writer) == true);
+        
+        Message receiverMessage(reader);
+        REQUIRE(receiverMessage.GetSeq() == senderMessage.GetSeq());
+        
+        reader = receiverMessage.GetData();
+        REQUIRE(reader.GetSize() == data.length());
+        REQUIRE(reader.ReadBytes(buffer.GetWriteData(), data.length()) == true);
+        REQUIRE(std::memcmp(buffer.GetData(), data.data(), data.length()) == 0);
     }
 }
