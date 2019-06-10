@@ -85,12 +85,17 @@ Outcome<Connection::HeaderType, Connection::HeaderErrors> Connection::ProcessPac
     {
     case Header::kDisconnect:
         return ProcessDisconnection(aReader);
+        break;
     case Header::kNegotiation:
         if (IsNegotiating() || !m_isServer)
             return ProcessNegociation(aReader);
+
+        break;
     case Header::kConnection:
         if (m_isServer && IsNegotiating())
             return ProcessConfirmation(aReader);
+
+        break;
     case Header::kPayload:
         m_timeSinceLastEvent = 0;
         break;
