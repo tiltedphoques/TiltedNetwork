@@ -3,6 +3,8 @@
 #include "DHChachaFilter.h"
 #include "Message.h"
 #include <cstring>
+#include <algorithm>
+#include <random>
 
 
 TEST_CASE("Protocol DHChaCha", "[protocol.dhchacha]")
@@ -76,7 +78,7 @@ TEST_CASE("Message", "[protocol.message]")
     GIVEN("Message passing")
     {
         Message senderMessage(24, (uint8_t *)data.data(), data.length());
-        Buffer buffer(data.length() + sizeof(Message));
+        Buffer buffer(data.length() + Message::HeaderBytes);
         Buffer::Writer writer(&buffer);
         Buffer::Reader reader(&buffer);
 
@@ -90,5 +92,57 @@ TEST_CASE("Message", "[protocol.message]")
         REQUIRE(reader.GetSize() == data.length());
         REQUIRE(reader.ReadBytes(buffer.GetWriteData(), data.length()) == true);
         REQUIRE(std::memcmp(buffer.GetData(), data.data(), data.length()) == 0);
+    }
+
+    GIVEN("A fragmented message")
+    {
+        Message senderMessage(24, (uint8_t *)data.data(), data.length());
+        Buffer buffer(1 + Message::HeaderBytes);
+        Buffer::Writer writer(&buffer);
+        Buffer::Reader reader(&buffer);
+        
+        auto randomOffsets = std::vector<size_t>(data.length(), 0);
+        for (size_t i = 0; i < randomOffsets.size(); i++) randomOffsets[i] = i;
+
+        std::random_device rd;
+        std::mt19937 g(rd());
+        g.seed(24);
+        std::shuffle(randomOffsets.begin(), randomOffsets.end(), g);
+        // now we have a really mean test case
+
+        Message *pReceiverMessage = nullptr;
+
+        for (size_t offset : randomOffsets)
+        {
+            REQUIRE(senderMessage.Write(writer, offset) == 1);
+            Message m(reader);
+            REQUIRE(m.IsValid() == true);
+            REQUIRE(m.IsComplete() == false);
+            REQUIRE(m.GetSeq() == senderMessage.GetSeq());
+            REQUIRE(m.GetLen() == senderMessage.GetLen());
+
+            if (pReceiverMessage == nullptr)
+            {
+                pReceiverMessage = new Message(std::move(m));
+            }
+            else
+            {
+                Message::Merge(*pReceiverMessage, m);
+                REQUIRE(pReceiverMessage->IsValid() == true);
+            }
+
+            writer.Reset();
+            reader.Reset();
+        }
+
+        REQUIRE(pReceiverMessage->IsComplete() == true);
+
+        Buffer completeBuffer(data.length());
+        reader = pReceiverMessage->GetData();
+        REQUIRE(reader.GetSize() == data.length());
+        REQUIRE(reader.ReadBytes(completeBuffer.GetWriteData(), data.length()) == true);
+        REQUIRE(std::memcmp(completeBuffer.GetData(), data.data(), data.length()) == 0);
+
+        delete pReceiverMessage;
     }
 }

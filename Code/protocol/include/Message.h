@@ -11,11 +11,9 @@ class Message: public AllocatorCompatible
 public:
     static constexpr uint8_t MessageLenBits = 16;
     static constexpr size_t MaxMessageSize = (1 << MessageLenBits) - 1;
-    
-    enum MessageError
-    {
-        kIncompleteMessage
-    };
+    static constexpr size_t HeaderBytes = sizeof(uint32_t) + (2*MessageLenBits + 7) / 8;
+
+    static Message& Merge(Message &aLhs, Message &aRhs) noexcept;
 
     Message(uint32_t aSeq, uint8_t *apData, size_t aLen) noexcept;
     Message(Buffer::Reader & aReader) noexcept;
@@ -25,6 +23,7 @@ public:
 
     Message& operator=(Message&& aRhs) noexcept;
     Message& operator=(const Message& acRhs) noexcept;
+    Message& operator+(Message& aRhs) noexcept;
 
     uint32_t GetSeq() const noexcept;
     size_t GetLen() const noexcept;
@@ -46,6 +45,8 @@ private:
 
         Slice& operator=(Slice&& aRhs) noexcept;
         Slice& operator=(const Slice& acRhs) noexcept;
+
+        size_t GetEndOffset() const noexcept;
 
     private:
         size_t m_offset;
