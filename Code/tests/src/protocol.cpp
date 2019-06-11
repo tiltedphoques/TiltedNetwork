@@ -61,10 +61,12 @@ TEST_CASE("Message", "[protocol.message]")
     GIVEN("A simple Message")
     {
         Message message(24, (uint8_t *) data.data(), data.length());
+        REQUIRE(message.IsComplete());
         REQUIRE(message.GetSeq() == 24);
+        REQUIRE(message.GetLen() == data.length());
 
         Buffer::Reader reader = message.GetData();
-        REQUIRE(reader.GetSize() == data.length());
+        REQUIRE(reader.GetSize() == message.GetLen());
 
         Buffer buffer(data.length());
         REQUIRE(reader.ReadBytes(buffer.GetWriteData(), data.length()) == true);
@@ -78,9 +80,10 @@ TEST_CASE("Message", "[protocol.message]")
         Buffer::Writer writer(&buffer);
         Buffer::Reader reader(&buffer);
 
-        REQUIRE(senderMessage.Write(writer) == true);
+        REQUIRE(senderMessage.Write(writer) == data.length());
         
         Message receiverMessage(reader);
+        REQUIRE(receiverMessage.IsComplete());
         REQUIRE(receiverMessage.GetSeq() == senderMessage.GetSeq());
         
         reader = receiverMessage.GetData();
