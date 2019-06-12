@@ -18,7 +18,7 @@ public:
 protected:
     bool ProcessPacket(Socket::Packet& aPacket) noexcept;
 
-    virtual bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept = 0;
+    virtual bool OnMessageReceived(const Endpoint& acRemoteEndpoint, const Message& acMessage) noexcept = 0;
     virtual bool OnConnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     virtual bool OnDisconnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     

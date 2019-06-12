@@ -346,11 +346,12 @@ TEST_CASE("Server", "[network.server]")
         }
 
     protected:
-        bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept override
+        bool OnMessageReceived(const Endpoint& acRemoteEndpoint, const Message& acMessage) noexcept override
         {
-            uint32_t seq;
 
-            if (aBufferReader.ReadBytes((uint8_t *)&seq, 4))
+            uint32_t seq;
+            
+            if (acMessage.GetData().ReadBytes((uint8_t *)&seq, 4))
             {
                 if (seq > m_clients[acRemoteEndpoint])
                     m_clients[acRemoteEndpoint] = seq;
@@ -380,7 +381,7 @@ TEST_CASE("Server", "[network.server]")
     class MyClient : public Client
     {
     public:
-        uint32_t m_seq;
+        uint32_t m_seq[1000]; // big message to force fragmentation
         uint32_t m_lastAck;
         bool m_connected;
 
@@ -393,16 +394,16 @@ TEST_CASE("Server", "[network.server]")
 
         void IncrAndSend()
         {
-            if (m_lastAck == m_seq)
-                m_seq++;
+            if (m_lastAck == m_seq[0])
+                m_seq[0]++;
 
-            SendPayload((uint8_t *)&m_seq, 4);
+            SendPayload((uint8_t *)&m_seq, sizeof(uint32_t)*1000);
         }
 
     protected:
-        bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept override
+        bool OnMessageReceived(const Endpoint& acRemoteEndpoint, const Message& acMessage) noexcept override
         {
-            if (aBufferReader.ReadBytes((uint8_t *)&m_lastAck, 4))
+            if (acMessage.GetData().ReadBytes((uint8_t *)&m_lastAck, 4))
             {
                 return true;
             }
@@ -418,7 +419,7 @@ TEST_CASE("Server", "[network.server]")
 
         bool OnDisconnected(const Endpoint &acRemoteEndpoint) noexcept override
         {
-            m_seq = 0;
+            m_seq[0] = 0;
             m_lastAck = 0;
             m_connected = false;
             return true;
@@ -462,22 +463,22 @@ TEST_CASE("Server", "[network.server]")
         WHEN("Client 1 sends some packets")
         {
             client1.IncrAndSend();
-            REQUIRE(client1.m_seq == 1);
+            REQUIRE(client1.m_seq[0] == 1);
             REQUIRE(client1.m_lastAck == 0);
-            REQUIRE(server.Update(1) == 1);
+            REQUIRE(server.Update(1) == 4); // account for fragmentation
             server.SendACK();
 
             REQUIRE(client1.Update(1) == 1);
-            REQUIRE(client1.m_seq == 1);
+            REQUIRE(client1.m_seq[0] == 1);
             REQUIRE(client1.m_lastAck == 1);
 
             client1.IncrAndSend();
             client1.IncrAndSend();
             client1.IncrAndSend();
-            REQUIRE(client1.m_seq == 2);
+            REQUIRE(client1.m_seq[0] == 2);
             REQUIRE(client1.m_lastAck == 1);
 
-            REQUIRE(server.Update(1) == 3);
+            REQUIRE(server.Update(1) == 12);
             server.SendACK();
 
             REQUIRE(client1.Update(1) == 1);
@@ -506,11 +507,11 @@ TEST_CASE("Server", "[network.server]")
         {
             client1.IncrAndSend();
             client2.IncrAndSend();
-            REQUIRE(client1.m_seq == 3);
+            REQUIRE(client1.m_seq[0] == 3);
             REQUIRE(client1.m_lastAck == 2);
-            REQUIRE(client2.m_seq == 1);
+            REQUIRE(client2.m_seq[0] == 1);
             REQUIRE(client2.m_lastAck == 0);
-            REQUIRE(server.Update(1) == 2);
+            REQUIRE(server.Update(1) == 8);
             server.SendACK();
 
             REQUIRE(client1.Update(1) == 1);

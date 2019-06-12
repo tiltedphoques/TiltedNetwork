@@ -112,7 +112,8 @@ TEST_CASE("Message", "[protocol.message]")
         // now we have a really mean test case
 
         MessageReceiver messageReceiver;
-        Message& receivedMessage = Message();
+        Message emptyMessage = Message();
+        Message& receivedMessage = emptyMessage;
 
         for (size_t offset : randomOffsets)
         {

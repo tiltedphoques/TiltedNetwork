@@ -5,9 +5,10 @@
 #include "Endpoint.h"
 #include "DHChachaFilter.h"
 #include "Socket.h"
+#include "MessageReceiver.h"
 
 class Socket;
-class Connection
+class Connection: public MessageReceiver
 {
 public:
 
@@ -75,6 +76,8 @@ public:
 
     void WriteHeader(Buffer::Writer& aWriter, HeaderType aHeaderType);
 
+    uint32_t GetNextMessageSeq();
+
 protected:
 
     Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
@@ -100,5 +103,6 @@ private:
     DHChachaFilter m_filter;
     uint32_t m_challengeCode;
     uint32_t m_remoteCode;
+    uint32_t m_messageSeq;
     bool m_isServer;
 };

@@ -29,13 +29,21 @@ bool Client::SendPayload(uint8_t *apData, size_t aLength) noexcept
     }
 
     // FIXME memory is allocated (and freed) for every packet sent
-    Buffer *pBuffer = GetAllocator()->New<Buffer>(aLength + 8); // Assuming 8 header bytes
-    Buffer::Writer writer(pBuffer);
-    m_connection.WriteHeader(writer, Connection::Header::kPayload);
-    writer.WriteBytes(apData, aLength);
-    bool sent = Send(m_connection.GetRemoteEndpoint(), *pBuffer);
-    GetAllocator()->Delete<Buffer>(pBuffer);
-    return sent;
+    Buffer buffer(Socket::MaxPacketSize);
+    uint32_t seq = m_connection.GetNextMessageSeq();
+    Message message(seq, apData, aLength);
+    Buffer::Writer writer(&buffer);
+    size_t bytesWritten = 0;
+
+    while (bytesWritten < aLength)
+    {
+        writer.Reset();
+        m_connection.WriteHeader(writer, Connection::Header::kPayload);
+        bytesWritten += message.Write(writer, bytesWritten);
+        Send(m_connection.GetRemoteEndpoint(), buffer);
+    }
+
+    return true;
 }
 
 uint32_t Client::Update(uint64_t aElapsedMilliSeconds) noexcept
@@ -91,7 +99,19 @@ bool Client::ProcessPacket(Socket::Packet& aPacket) noexcept
         if (!headerType.HasError()
             && (headerType.GetResult() == Connection::Header::kPayload || headerType.GetResult() == Connection::Header::kDisconnect))
         {
-            return OnPacketReceived(aPacket.Remote, reader);
+            auto messageOutcome = m_connection.ReadMessage(reader);
+
+            while (!messageOutcome.HasError())
+            {
+                const Message &message = messageOutcome.GetResult();
+
+                if (message.IsComplete())
+                    OnMessageReceived(aPacket.Remote, message);
+
+                messageOutcome = m_connection.ReadMessage(reader);
+            }
+
+            return true;
         }
     }
     break;

@@ -19,12 +19,14 @@ static NullCommunicationInterface s_dummyInterface;
 static const char* s_headerSignature = "MG";
 
 Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint, bool aIsServer)
-    : m_communication{ aCommunicationInterface }
+    : MessageReceiver()
+    , m_communication{ aCommunicationInterface }
     , m_state{kNegociating}
     , m_timeSinceLastEvent{0}
     , m_remoteEndpoint{acRemoteEndpoint}
     , m_isServer{aIsServer}
     , m_remoteCode{ 0 }
+    , m_messageSeq{ 0 }
 {
     CryptoPP::AutoSeededRandomPool rng;
     m_challengeCode = rng.GenerateWord32();
@@ -32,13 +34,15 @@ Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& 
 }
 
 Connection::Connection(Connection&& aRhs) noexcept
-    : m_communication{aRhs.m_communication}
+    : MessageReceiver()
+    , m_communication{aRhs.m_communication}
     , m_state{std::move(aRhs.m_state)}
     , m_timeSinceLastEvent{std::move(aRhs.m_timeSinceLastEvent)}
     , m_remoteEndpoint{std::move(aRhs.m_remoteEndpoint)}
     , m_isServer{aRhs.m_isServer}
     , m_challengeCode{aRhs.m_challengeCode}
     , m_remoteCode{aRhs.m_remoteCode}
+    , m_messageSeq{ 0 }
 {
     aRhs.m_communication = s_dummyInterface;
     aRhs.m_state = kNone;
@@ -337,4 +341,9 @@ bool Connection::WriteChallenge(Buffer::Writer &aWriter, uint32_t aCode)
 bool Connection::ReadChallenge(Buffer::Reader &aReader, uint32_t &aCode)
 {
     return aReader.ReadBytes((uint8_t *)&aCode, sizeof(m_challengeCode));
+}
+
+uint32_t Connection::GetNextMessageSeq()
+{
+    return m_messageSeq++;
 }

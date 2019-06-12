@@ -20,7 +20,7 @@ public:
     bool SendPayload(const Endpoint& acRemoteEndpoint, uint8_t *apData, size_t aLength) noexcept;
 
 protected:
-    virtual bool OnPacketReceived(const Endpoint& acRemoteEndpoint, Buffer::Reader &aBufferReader) noexcept = 0;
+    virtual bool OnMessageReceived(const Endpoint& acRemoteEndpoint, const Message& acMessage) noexcept = 0;
     virtual bool OnClientConnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     virtual bool OnClientDisconnected(const Endpoint& acRemoteEndpoint) noexcept = 0;
     bool ProcessPacket(Socket::Packet& aPacket) noexcept;
