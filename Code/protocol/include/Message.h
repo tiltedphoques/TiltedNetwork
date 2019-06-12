@@ -4,17 +4,17 @@
 
 #include "Buffer.h"
 #include "Allocator.h"
-#include "Outcome.h"
 
-class Message: public AllocatorCompatible
+class Message
 {
 public:
     static constexpr uint8_t MessageLenBits = 16;
     static constexpr size_t MaxMessageSize = (1 << MessageLenBits) - 1;
     static constexpr size_t HeaderBytes = sizeof(uint32_t) + (2*MessageLenBits + 7) / 8;
 
-    static Message& Merge(Message &aLhs, Message &aRhs) noexcept;
+    static Message& Merge(Message &aDest, Message &aSource) noexcept;
 
+    Message() noexcept;
     Message(uint32_t aSeq, uint8_t *apData, size_t aLen) noexcept;
     Message(Buffer::Reader & aReader) noexcept;
     Message(Message&& aRhs) noexcept;

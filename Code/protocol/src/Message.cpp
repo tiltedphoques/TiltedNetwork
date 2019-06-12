@@ -82,6 +82,12 @@ Message& Message::Merge(Message& aDest, Message& aSource) noexcept
     return aDest;
 }
 
+Message::Message() noexcept
+    : m_slices()
+    , m_len(0)
+    , m_seq(0)
+{}
+
 Message::Message(uint32_t aSeq, uint8_t *apData, size_t aLen) noexcept
     : m_slices({std::move(Message::Slice(apData, aLen))})
     , m_len(aLen)
@@ -97,7 +103,7 @@ Message::Message(Buffer::Reader& aReader) noexcept
 {
     aReader.ReadBytes((uint8_t *)&m_seq, sizeof(m_seq));
 
-    if (aReader.ReadBits(m_len, Message::MessageLenBits) && m_len <= Message::MaxMessageSize)
+    if (aReader.ReadBits(m_len, Message::MessageLenBits) && m_len < Message::MaxMessageSize)
     {
         m_slices.push_front(Slice(aReader, m_len));
         

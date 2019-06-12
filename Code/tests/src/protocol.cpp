@@ -2,6 +2,7 @@
 
 #include "DHChachaFilter.h"
 #include "Message.h"
+#include "MessageReceiver.h"
 #include <cstring>
 #include <algorithm>
 #include <random>
@@ -110,39 +111,33 @@ TEST_CASE("Message", "[protocol.message]")
         std::shuffle(randomOffsets.begin(), randomOffsets.end(), g);
         // now we have a really mean test case
 
-        Message *pReceiverMessage = nullptr;
+        MessageReceiver messageReceiver;
+        Message& receivedMessage = Message();
 
         for (size_t offset : randomOffsets)
         {
             REQUIRE(senderMessage.Write(writer, offset) == 1);
-            Message m(reader);
-            REQUIRE(m.IsValid() == true);
-            REQUIRE(m.IsComplete() == false);
-            REQUIRE(m.GetSeq() == senderMessage.GetSeq());
-            REQUIRE(m.GetLen() == senderMessage.GetLen());
+            auto messageOutcome = messageReceiver.ReadMessage(reader);
+            REQUIRE(messageOutcome.HasError() == false);
+            REQUIRE(messageOutcome.GetResult().IsValid() == true);
 
-            if (pReceiverMessage == nullptr)
+            if (messageOutcome.GetResult().IsComplete())
             {
-                pReceiverMessage = new Message(std::move(m));
-            }
-            else
-            {
-                Message::Merge(*pReceiverMessage, m);
-                REQUIRE(pReceiverMessage->IsValid() == true);
+                // we should enter here only once, at the last iteration
+                REQUIRE(receivedMessage.IsValid() == false);
+                receivedMessage = messageOutcome.GetResult();
             }
 
             writer.Reset();
             reader.Reset();
         }
 
-        REQUIRE(pReceiverMessage->IsComplete() == true);
+        REQUIRE(receivedMessage.IsComplete() == true);
 
         Buffer completeBuffer(data.length());
-        reader = pReceiverMessage->GetData();
+        reader = receivedMessage.GetData();
         REQUIRE(reader.GetSize() == data.length());
         REQUIRE(reader.ReadBytes(completeBuffer.GetWriteData(), data.length()) == true);
         REQUIRE(std::memcmp(completeBuffer.GetData(), data.data(), data.length()) == 0);
-
-        delete pReceiverMessage;
     }
 }
