@@ -2,9 +2,9 @@
 #include "Selector.h"
 
 Server::Server()
-    : m_connectionManager(64)
-    , m_v4Listener(Endpoint::kIPv4)
+    : m_v4Listener(Endpoint::kIPv4)
     , m_v6Listener(Endpoint::kIPv6)
+    , m_connectionManager(64)
 {
 
 }
