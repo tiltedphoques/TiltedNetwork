@@ -55,7 +55,7 @@ workspace ("DestroyerOfWorlds")
                 "../Code/tests/include/",
                 "../Code/network/include/",
                 "../Code/protocol/include/",
-                "../Code/core/include/"
+                "../Libraries/TiltedCore/Code/core/include/"
             }
 
              files
@@ -88,7 +88,7 @@ workspace ("DestroyerOfWorlds")
 
             includedirs
             {
-                "../Code/core/include/",
+                "../Libraries/TiltedCore/Code/core/include/",
                 "../Code/network/include/",
                 "../Code/protocol/include/",
             }
@@ -114,7 +114,7 @@ workspace ("DestroyerOfWorlds")
             includedirs
             {
                 "../Code/protocol/include/",
-                "../Code/core/include/",
+                "../Libraries/TiltedCore/Code/core/include/",
                 "../ThirdParty/cryptopp/",
             }
 
@@ -144,13 +144,13 @@ workspace ("DestroyerOfWorlds")
 
             includedirs
             {
-                "../Code/core/include/",
+                "../Libraries/TiltedCore/Code/core/include/",
             }
 
             files
             {
-                "../Code/core/include/**.h",
-                "../Code/core/src/**.cpp",
+                "../Libraries/TiltedCore/Code/core/include/**.h",
+                "../Libraries/TiltedCore/Code/core/src/**.cpp",
             }
 
             filter { "architecture:*86" }

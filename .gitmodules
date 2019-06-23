@@ -1,3 +1,6 @@
 [submodule "ThirdParty/cryptopp"]
 	path = ThirdParty/cryptopp
 	url = https://github.com/weidai11/cryptopp
+[submodule "Libraries/TiltedCore"]
+	path = Libraries/TiltedCore
+	url = https://github.com/yamashi/TiltedCore
