@@ -1,3 +1,3 @@
-# Destroyer Of Worlds
+# Tilted Network
 
 This library is yet another attempt to get a decent networking library designed with games in mind.
