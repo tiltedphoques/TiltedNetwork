@@ -1,7 +1,7 @@
 require("premake", ">=5.0.0-alpha10")
 
 include "module.lua"
-include "../Libraries/TiltedCore/Build/module.lua"
+include "../../TiltedCore/Build/module.lua"
 
 workspace ("Tilted Network")
 
@@ -46,6 +46,16 @@ workspace ("Tilted Network")
         defines { "DEBUG" }
         optimize ("Off")
         symbols ( "On" )
+        
+    filter { "architecture:*86" }
+        libdirs { "lib/x32" }
+        targetdir ("lib/x32")
+
+    filter { "architecture:*64" }
+        libdirs { "lib/x64" }
+        targetdir ("lib/x64")
+        
+    filter {}
 
     group ("Applications")
         project ("Tests")
@@ -58,7 +68,7 @@ workspace ("Tilted Network")
                 "../Code/tests/include/",
                 "../Code/network/include/",
                 "../Code/protocol/include/",
-                "../Libraries/TiltedCore/Code/core/include/"
+                "../../TiltedCore/Code/core/include/"
             }
 
              files
@@ -85,9 +95,9 @@ workspace ("Tilted Network")
                 targetdir ("bin/x64")
 		
     group ("Libraries")
-        CreateCoreProject("../Libraries/TiltedCore")
-        CreateNetworkProject("..", "../Libraries/TiltedCore")
-        CreateProtocolProject("..", "../Libraries/TiltedCore")
+        CreateCoreProject("../../TiltedCore")
+        CreateNetworkProject("..", "../../TiltedCore")
+        CreateProtocolProject("..", "../../TiltedCore")
     
     group("ThirdParty")
         CreateCryptoppProject("..")

@@ -16,16 +16,6 @@ function CreateNetworkProject(basePath, coreBasePath)
             basePath .. "/Code/network/src/**.cpp",
         }
 
-        filter { "architecture:*86" }
-            libdirs { "lib/x32" }
-            targetdir ("lib/x32")
-
-        filter { "architecture:*64" }
-            libdirs { "lib/x64" }
-            targetdir ("lib/x64")
-            
-        filter {}
-
 end
 
 function CreateProtocolProject(basePath, coreBasePath)
@@ -52,15 +42,6 @@ function CreateProtocolProject(basePath, coreBasePath)
             "cryptopp"
         }
 
-        filter { "architecture:*86" }
-            libdirs { "lib/x32" }
-            targetdir ("lib/x32")
-
-        filter { "architecture:*64" }
-            libdirs { "lib/x64" }
-            targetdir ("lib/x64")
-            
-        filter {}
 
 end
 
