@@ -4,29 +4,32 @@
 #include "Allocator.h"
 #include <array>
 
-
-struct DHChachaFilterPimpl;
-class DHChachaFilter : public AllocatorCompatible
+namespace TiltedPhoques
 {
-public:
+	struct DHChachaFilterPimpl;
+	struct DHChachaFilter
+	{
+		DHChachaFilter();
+		~DHChachaFilter();
 
-    DHChachaFilter();
-    ~DHChachaFilter();
+		TP_NOCOPYMOVE(DHChachaFilter);
+		TP_ALLOCATOR;
 
-    bool PreConnect(Buffer::Writer* apBuffer);
-    bool ReceiveConnect(Buffer::Reader* apBuffer);
-    
-    // Called before the packet gets sent
-    bool PreSend(Buffer::Writer* apBuffer, uint32_t aSequenceNumber);
-    // Called after the payload is generated
-    bool PostSend(uint8_t* apPayload, size_t aLength, uint32_t aSequenceNumber);
-    // Called with the raw payload
-    bool PreReceive(uint8_t* apPayload, size_t aLength, uint32_t aSequenceNumber);
+		bool PreConnect(Buffer::Writer* apBuffer);
+		bool ReceiveConnect(Buffer::Reader* apBuffer);
 
-private:
+		// Called before the packet gets sent
+		bool PreSend(Buffer::Writer* apBuffer, uint32_t aSequenceNumber);
+		// Called after the payload is generated
+		bool PostSend(uint8_t* apPayload, size_t aLength, uint32_t aSequenceNumber);
+		// Called with the raw payload
+		bool PreReceive(uint8_t* apPayload, size_t aLength, uint32_t aSequenceNumber);
 
-    void GenerateKeys();
+	private:
 
-    DHChachaFilterPimpl* m_pPimpl;
-    std::array<uint8_t, 20> m_iv;
-};
+		void GenerateKeys();
+
+		DHChachaFilterPimpl* m_pPimpl;
+		std::array<uint8_t, 20> m_iv;
+	};
+}

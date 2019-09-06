@@ -4,23 +4,24 @@
 #include "Connection.h"
 #include <unordered_map>
 
-class ConnectionManager : public AllocatorCompatible
+namespace TiltedPhoques
 {
-public:
+	struct ConnectionManager : public AllocatorCompatible
+	{
+		ConnectionManager(size_t aMaxConnections);
 
-    ConnectionManager(size_t aMaxConnections);
+		Connection* Find(const Endpoint& acEndpoint);
+		const Connection* Find(const Endpoint& acEndpoint) const;
 
-    Connection* Find(const Endpoint& acEndpoint);
-    const Connection* Find(const Endpoint& acEndpoint) const;
+		void Add(Connection aConnection);
 
-    void Add(Connection aConnection);
+		bool IsFull() const;
 
-    bool IsFull() const;
+		void Update(uint64_t aElapsedMilliSeconds);
 
-    void Update(uint64_t aElapsedMilliSeconds);
+	private:
 
-private:
-
-    std::unordered_map<Endpoint, Connection> m_connections;
-    size_t m_maxConnections;
-};
+		std::unordered_map<Endpoint, Connection> m_connections;
+		size_t m_maxConnections;
+	};
+}

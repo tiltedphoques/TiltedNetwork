@@ -1,181 +1,182 @@
 #include "Connection.h"
 #include "StackAllocator.h"
 
-
-
-struct NullCommunicationInterface : public Connection::ICommunication
+namespace TiltedPhoques
 {
-    bool Send(const Endpoint& acRemote, Buffer aBuffer) override
-    {
-        (void)acRemote;
-        (void)aBuffer;
+	struct NullCommunicationInterface : public Connection::ICommunication
+	{
+		bool Send(const Endpoint& acRemote, Buffer aBuffer) override
+		{
+			(void)acRemote;
+			(void)aBuffer;
 
-        return false;
-    }
-};
+			return false;
+		}
+	};
 
-static NullCommunicationInterface s_dummyInterface;
+	static NullCommunicationInterface s_dummyInterface;
 
-static const char* s_headerSignature = "MG";
+	static const char* s_headerSignature = "MG";
 
-Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint)
-    : m_communication{ aCommunicationInterface }
-    , m_state{kNegociating}
-    , m_timeSinceLastEvent{0}
-    , m_remoteEndpoint{acRemoteEndpoint}
-{
+	Connection::Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint)
+		: m_communication{ aCommunicationInterface }
+		, m_state{ kNegociating }
+		, m_timeSinceLastEvent{ 0 }
+		, m_remoteEndpoint{ acRemoteEndpoint }
+	{
 
-}
+	}
 
-Connection::Connection(Connection&& aRhs) noexcept
-    : m_communication{aRhs.m_communication}
-    , m_state{std::move(aRhs.m_state)}
-    , m_timeSinceLastEvent{std::move(aRhs.m_timeSinceLastEvent)}
-    , m_remoteEndpoint{std::move(aRhs.m_remoteEndpoint)}
-{
-    aRhs.m_communication = s_dummyInterface;
-    aRhs.m_state = kNone;
-    aRhs.m_timeSinceLastEvent = 0;
-}
+	Connection::Connection(Connection&& aRhs) noexcept
+		: m_communication{ aRhs.m_communication }
+		, m_state{ std::move(aRhs.m_state) }
+		, m_timeSinceLastEvent{ std::move(aRhs.m_timeSinceLastEvent) }
+		, m_remoteEndpoint{ std::move(aRhs.m_remoteEndpoint) }
+	{
+		aRhs.m_communication = s_dummyInterface;
+		aRhs.m_state = kNone;
+		aRhs.m_timeSinceLastEvent = 0;
+	}
 
-Connection::~Connection()
-{
-}
+	Connection::~Connection()
+	{
+	}
 
-Connection& Connection::operator=(Connection&& aRhs) noexcept
-{
-    m_communication = aRhs.m_communication;
-    m_state = aRhs.m_state;
-    m_timeSinceLastEvent = aRhs.m_timeSinceLastEvent;
-    m_remoteEndpoint = std::move(aRhs.m_remoteEndpoint);
+	Connection& Connection::operator=(Connection&& aRhs) noexcept
+	{
+		m_communication = aRhs.m_communication;
+		m_state = aRhs.m_state;
+		m_timeSinceLastEvent = aRhs.m_timeSinceLastEvent;
+		m_remoteEndpoint = std::move(aRhs.m_remoteEndpoint);
 
-    aRhs.m_communication = s_dummyInterface;
-    aRhs.m_state = kNone;
-    aRhs.m_timeSinceLastEvent = 0;
+		aRhs.m_communication = s_dummyInterface;
+		aRhs.m_state = kNone;
+		aRhs.m_timeSinceLastEvent = 0;
 
-    return *this;
-}
+		return *this;
+	}
 
-bool Connection::ProcessPacket(Buffer* apBuffer)
-{
-    Buffer::Reader reader(apBuffer);
-    
-    auto header = ProcessHeader(reader);
-    if (header.HasError())
-        return false;
+	bool Connection::ProcessPacket(Buffer* apBuffer)
+	{
+		Buffer::Reader reader(apBuffer);
 
-    m_timeSinceLastEvent = 0;
+		auto header = ProcessHeader(reader);
+		if (header.HasError())
+			return false;
 
-    return true;
-}
+		m_timeSinceLastEvent = 0;
 
-bool Connection::ProcessNegociation(Buffer* apBuffer)
-{
-    Buffer::Reader reader(apBuffer);
+		return true;
+	}
 
-    auto header = ProcessHeader(reader);
-    if (header.HasError())
-        return false;
+	bool Connection::ProcessNegociation(Buffer* apBuffer)
+	{
+		Buffer::Reader reader(apBuffer);
 
-    if (m_filter.ReceiveConnect(&reader))
-        m_state = kConnected;
+		auto header = ProcessHeader(reader);
+		if (header.HasError())
+			return false;
 
-    return IsNegotiating() || IsConnected();
-}
+		if (m_filter.ReceiveConnect(&reader))
+			m_state = kConnected;
 
-bool Connection::IsNegotiating() const
-{
-    return m_state == kNegociating;
-}
+		return IsNegotiating() || IsConnected();
+	}
 
-bool Connection::IsConnected() const
-{
-    return m_state == kConnected;
-}
+	bool Connection::IsNegotiating() const
+	{
+		return m_state == kNegociating;
+	}
 
-Connection::State Connection::GetState() const
-{
-    return m_state;
-}
+	bool Connection::IsConnected() const
+	{
+		return m_state == kConnected;
+	}
 
-const Endpoint& Connection::GetRemoteEndpoint() const
-{
-    return m_remoteEndpoint;
-}
+	Connection::State Connection::GetState() const
+	{
+		return m_state;
+	}
 
-void Connection::Update(uint64_t aElapsedMilliseconds)
-{
-    m_timeSinceLastEvent += aElapsedMilliseconds;
+	const Endpoint& Connection::GetRemoteEndpoint() const
+	{
+		return m_remoteEndpoint;
+	}
 
-    // Connection is considered timed out if no data is received in 15s (TODO: make this configurable)
-    if (m_timeSinceLastEvent > 15 * 1000)
-    {
-        m_state = kNone;
-        return;
-    }
+	void Connection::Update(uint64_t aElapsedMilliseconds)
+	{
+		m_timeSinceLastEvent += aElapsedMilliseconds;
 
-    switch (m_state)
-    {
-    case Connection::kNone:
-        break;
-    case Connection::kNegociating:
-        SendNegotiation();
-        break;
-    case Connection::kConnected:
-        break;
-    default:
-        break;
-    }
-}
+		// Connection is considered timed out if no data is received in 15s (TODO: make this configurable)
+		if (m_timeSinceLastEvent > 15 * 1000)
+		{
+			m_state = kNone;
+			return;
+		}
 
-void Connection::SendNegotiation()
-{
-    Header header;
-    header.Signature[0] = s_headerSignature[0];
-    header.Signature[1] = s_headerSignature[1];
-    header.Version = 1;
-    header.Type = Header::kNegotiation;
-    header.Length = 0;
+		switch (m_state)
+		{
+		case Connection::kNone:
+			break;
+		case Connection::kNegociating:
+			SendNegotiation();
+			break;
+		case Connection::kConnected:
+			break;
+		default:
+			break;
+		}
+	}
 
-    StackAllocator<1 << 13> allocator;
-    auto* pBuffer = allocator.New<Buffer>(1200);
+	void Connection::SendNegotiation()
+	{
+		Header header;
+		header.Signature[0] = s_headerSignature[0];
+		header.Signature[1] = s_headerSignature[1];
+		header.Version = 1;
+		header.Type = Header::kNegotiation;
+		header.Length = 0;
 
-    Buffer::Writer writer(pBuffer);
-    writer.WriteBytes((const uint8_t*)header.Signature, 2);
-    writer.WriteBits(header.Version, 6);
-    writer.WriteBits(header.Type, 3);
-    writer.WriteBits(header.Length, 11);
+		StackAllocator<1 << 13> allocator;
+		auto* pBuffer = allocator.New<Buffer>(1200);
 
-    m_filter.PreConnect(&writer);
+		Buffer::Writer writer(pBuffer);
+		writer.WriteBytes((const uint8_t*)header.Signature, 2);
+		writer.WriteBits(header.Version, 6);
+		writer.WriteBits(header.Type, 3);
+		writer.WriteBits(header.Length, 11);
 
-    m_communication.Send(m_remoteEndpoint, *pBuffer);
+		m_filter.PreConnect(&writer);
 
-    allocator.Delete(pBuffer);
-}
+		m_communication.Send(m_remoteEndpoint, *pBuffer);
 
-Outcome<Connection::Header, Connection::HeaderErrors> Connection::ProcessHeader(Buffer::Reader& aReader)
-{
-    Header header;
+		allocator.Delete(pBuffer);
+	}
 
-    aReader.ReadBytes((uint8_t*)&header.Signature, 2);
+	Outcome<Connection::Header, Connection::HeaderErrors> Connection::ProcessHeader(Buffer::Reader& aReader)
+	{
+		Header header;
 
-    if (header.Signature[0] != 'M' || header.Signature[1] != 'G')
-        return kBadSignature;
+		aReader.ReadBytes((uint8_t*)& header.Signature, 2);
 
-    aReader.ReadBits(header.Version, 6);
+		if (header.Signature[0] != 'M' || header.Signature[1] != 'G')
+			return kBadSignature;
 
-    if (header.Version != 1)
-        return kBadVersion;
+		aReader.ReadBits(header.Version, 6);
 
-    aReader.ReadBits(header.Type, 3);
+		if (header.Version != 1)
+			return kBadVersion;
 
-    if (header.Type >= Header::kCount)
-        return kBadPacketType;
+		aReader.ReadBits(header.Type, 3);
 
-    aReader.ReadBits(header.Length, 11);
+		if (header.Type >= Header::kCount)
+			return kBadPacketType;
 
-    if (header.Length > 1200)
-        return kTooLarge;
+		aReader.ReadBits(header.Length, 11);
 
-    return header;
+		if (header.Length > 1200)
+			return kTooLarge;
+
+		return header;
+	}
 }

@@ -19,7 +19,10 @@
 
 #endif
 
-void InitializeNetwork();
-void ShutdownNetwork();
+namespace TiltedPhoques
+{
+	void InitializeNetwork();
+	void ShutdownNetwork();
 
-using Socket_t = decltype(socket(AF_INET, SOCK_DGRAM, 0));
+	using Socket_t = decltype(socket(AF_INET, SOCK_DGRAM, 0));
+}

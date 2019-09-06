@@ -8,6 +8,8 @@
 #include <cstring>
 #include <thread>
 
+using namespace TiltedPhoques;
+
 
 TEST_CASE("Endpoint", "[network.endpoint]")
 {

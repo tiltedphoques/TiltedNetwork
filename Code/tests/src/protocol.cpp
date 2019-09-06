@@ -3,6 +3,7 @@
 #include "DHChachaFilter.h"
 #include <cstring>
 
+using namespace TiltedPhoques;
 
 TEST_CASE("Protocol DHChaCha", "[protocol.dhchacha]")
 {
