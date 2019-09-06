@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Allocator.h"
+#include "Buffer.hpp"
+#include "Allocator.hpp"
 #include <array>
 
 namespace TiltedPhoques

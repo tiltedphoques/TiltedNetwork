@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Outcome.h"
-#include "Endpoint.h"
-#include "DHChachaFilter.h"
+#include "Buffer.hpp"
+#include "Outcome.hpp"
+#include "Endpoint.hpp"
+#include "DHChachaFilter.hpp"
 
 namespace TiltedPhoques
 {

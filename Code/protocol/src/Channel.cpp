@@ -1,4 +1,4 @@
-#include "Channel.h"
+#include "Channel.hpp"
 #include <cassert>
 
 namespace TiltedPhoques

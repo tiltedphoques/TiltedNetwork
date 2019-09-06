@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Network.h"
-#include "Endpoint.h"
+#include "Network.hpp"
+#include "Endpoint.hpp"
 
 #include <string>
 #include <vector>
 #include <future>
-#include "Stl.h"
+#include "Stl.hpp"
 
 namespace TiltedPhoques
 {

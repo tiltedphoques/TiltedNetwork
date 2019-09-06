@@ -1,4 +1,4 @@
-#include "DHChachaFilter.h"
+#include "DHChachaFilter.hpp"
 
 #include "cryptlib.h"
 #include "chacha.h"
@@ -10,7 +10,6 @@
 #include "secblock.h"
 #include "sha.h"
 #include "blake2.h"
-#include "asn.h"
 
 
 using namespace CryptoPP::ASN1;

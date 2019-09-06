@@ -1,5 +1,5 @@
-#include "Server.h"
-#include "Selector.h"
+#include "Server.hpp"
+#include "Selector.hpp"
 
 namespace TiltedPhoques
 {

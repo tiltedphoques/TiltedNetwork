@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Network.h"
-#include "Outcome.h"
-#include "Buffer.h"
-#include "Endpoint.h"
+#include "Network.hpp"
+#include "Outcome.hpp"
+#include "Buffer.hpp"
+#include "Endpoint.hpp"
 
 namespace TiltedPhoques
 {

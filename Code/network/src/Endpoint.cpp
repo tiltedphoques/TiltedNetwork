@@ -1,5 +1,5 @@
-#include "Endpoint.h"
-#include "Network.h"
+#include "Endpoint.hpp"
+#include "Network.hpp"
 
 #include <cstring>
 

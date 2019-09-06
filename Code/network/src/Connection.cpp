@@ -1,9 +1,9 @@
-#include "Connection.h"
-#include "StackAllocator.h"
+#include "Connection.hpp"
+#include "StackAllocator.hpp"
 
 namespace TiltedPhoques
 {
-	struct NullCommunicationInterface : public Connection::ICommunication
+	struct NullCommunicationInterface : Connection::ICommunication
 	{
 		bool Send(const Endpoint& acRemote, Buffer aBuffer) override
 		{

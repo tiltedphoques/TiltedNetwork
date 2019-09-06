@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Socket.h"
-#include "ConnectionManager.h"
+#include "Socket.hpp"
+#include "ConnectionManager.hpp"
 
 namespace TiltedPhoques
 {

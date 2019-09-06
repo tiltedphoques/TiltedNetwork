@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Network.h"
-#include "Outcome.h"
-#include "Meta.h"
+#include "Network.hpp"
+#include "Outcome.hpp"
+#include "Meta.hpp"
 
 namespace TiltedPhoques
 {

@@ -12,7 +12,7 @@ function CreateNetworkProject(basePath, coreBasePath)
 
         files
         {
-            basePath .. "/Code/network/include/**.h",
+            basePath .. "/Code/network/include/**.hpp",
             basePath .. "/Code/network/src/**.cpp",
         }
 
@@ -32,7 +32,7 @@ function CreateProtocolProject(basePath, coreBasePath)
 
         files
         {
-            basePath .. "/Code/protocol/include/**.h",
+            basePath .. "/Code/protocol/include/**.hpp",
             basePath .. "/Code/protocol/src/**.cpp",
         }
         

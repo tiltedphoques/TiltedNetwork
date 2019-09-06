@@ -1,9 +1,9 @@
 #include "catch.hpp"
 
-#include "Socket.h"
-#include "Resolver.h"
-#include "Server.h"
-#include "Selector.h"
+#include "Socket.hpp"
+#include "Resolver.hpp"
+#include "Server.hpp"
+#include "Selector.hpp"
 
 #include <cstring>
 #include <thread>

@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "DHChachaFilter.h"
+#include "DHChachaFilter.hpp"
 #include <cstring>
 
 using namespace TiltedPhoques;

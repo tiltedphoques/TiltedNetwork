@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Socket.h"
-#include "Connection.h"
+#include "Socket.hpp"
+#include "Connection.hpp"
 #include <unordered_map>
 
 namespace TiltedPhoques
