@@ -1,0 +1,29 @@
+steps:
+  - checkout: self
+    lfs: boolean
+    submodules: recursive
+
+  - script: |
+      git clone --recurse-submodules https://github.com/tiltedphoques/TiltedCore.git ../TiltedCore
+    displayName: Clone TiltedCore
+
+  - script: |
+      cd Build
+      ./MakeVS2019Projects.bat
+    displayName: Generate
+
+  - task: VSBuild@1
+    displayName: Building
+    inputs:
+      solution: Build/projects/*.sln
+      msbuildArgs: -m
+      Configuration: Release
+      Platform: $(platform)
+
+  - script: |
+      SET real_platform="x64"
+      if "%platform%" == "Win32" SET real_platform="x32"
+
+      cd Build/bin/%real_platform%
+      Tests_r.exe
+    displayName: Test
