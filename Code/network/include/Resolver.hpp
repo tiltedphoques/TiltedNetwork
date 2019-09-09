@@ -23,7 +23,7 @@ namespace TiltedPhoques
 			Iterator()
 			{
 			}
-			Iterator(std::vector<value_type>::const_iterator aIterator) : m_iterator(aIterator)
+			Iterator(Vector<value_type>::const_iterator aIterator) : m_iterator(aIterator)
 			{
 			}
 			Iterator& operator++()
