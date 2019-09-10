@@ -7,77 +7,77 @@
 
 namespace TiltedPhoques
 {
-	struct Socket;
-	struct Connection
-	{
-		struct Header
-		{
-			enum
-			{
-				kNegotiation,
-				kConnection,
-				kCount
-			};
+    struct Socket;
+    struct Connection
+    {
+        struct Header
+        {
+            enum
+            {
+                kNegotiation,
+                kConnection,
+                kCount
+            };
 
-			char Signature[2];
-			uint64_t Version;
-			uint64_t Type;
-			uint64_t Length;
-		};
+            char Signature[2];
+            uint64_t Version;
+            uint64_t Type;
+            uint64_t Length;
+        };
 
-		enum State
-		{
-			kNone,
-			kNegociating,
-			kConnected
-		};
+        enum State
+        {
+            kNone,
+            kNegociating,
+            kConnected
+        };
 
-		enum HeaderErrors
-		{
-			kBadSignature,
-			kBadVersion,
-			kBadPacketType,
-			kTooLarge,
-			kUnknownChannel
-		};
+        enum HeaderErrors
+        {
+            kBadSignature,
+            kBadVersion,
+            kBadPacketType,
+            kTooLarge,
+            kUnknownChannel
+        };
 
-		struct ICommunication
-		{
-			virtual bool Send(const Endpoint& acRemote, Buffer aBuffer) = 0;
-		};
+        struct ICommunication
+        {
+            virtual bool Send(const Endpoint& acRemote, Buffer aBuffer) = 0;
+        };
 
-		Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint);
-		Connection(const Connection& acRhs) = delete;
-		Connection(Connection&& aRhs) noexcept;
+        Connection(ICommunication& aCommunicationInterface, const Endpoint& acRemoteEndpoint);
+        Connection(const Connection& acRhs) = delete;
+        Connection(Connection&& aRhs) noexcept;
 
-		~Connection();
+        ~Connection();
 
-		Connection& operator=(Connection&& aRhs) noexcept;
-		Connection& operator=(const Connection& aRhs) = delete;
+        Connection& operator=(Connection&& aRhs) noexcept;
+        Connection& operator=(const Connection& aRhs) = delete;
 
-		bool ProcessPacket(Buffer* apBuffer);
-		bool ProcessNegociation(Buffer* apBuffer);
+        bool ProcessPacket(Buffer* apBuffer);
+        bool ProcessNegociation(Buffer* apBuffer);
 
-		bool IsNegotiating() const;
-		bool IsConnected() const;
+        bool IsNegotiating() const;
+        bool IsConnected() const;
 
-		State GetState() const;
-		const Endpoint& GetRemoteEndpoint() const;
+        State GetState() const;
+        const Endpoint& GetRemoteEndpoint() const;
 
-		void Update(uint64_t aElapsedMilliseconds);
+        void Update(uint64_t aElapsedMilliseconds);
 
-	protected:
+    protected:
 
-		void SendNegotiation();
+        void SendNegotiation();
 
-		Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
+        Outcome<Header, HeaderErrors> ProcessHeader(Buffer::Reader& aReader);
 
-	private:
+    private:
 
-		ICommunication& m_communication;
-		State m_state;
-		uint64_t m_timeSinceLastEvent;
-		Endpoint m_remoteEndpoint;
-		DHChachaFilter m_filter;
-	};
+        ICommunication& m_communication;
+        State m_state;
+        uint64_t m_timeSinceLastEvent;
+        Endpoint m_remoteEndpoint;
+        DHChachaFilter m_filter;
+    };
 }

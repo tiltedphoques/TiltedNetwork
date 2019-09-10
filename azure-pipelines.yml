@@ -17,7 +17,7 @@ jobs:
 
     variables:
       platform: Win32
-    
+
     steps:
       - template: .ci/windows-build.yml
 
@@ -31,4 +31,3 @@ jobs:
 
     steps:
       - template: .ci/windows-build.yml
-

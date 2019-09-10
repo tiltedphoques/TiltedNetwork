@@ -6,23 +6,23 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32")
 #elif __linux__
-#include <unistd.h> 
-#include <sys/types.h> 
-#include <sys/socket.h> 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <netinet/in.h> 
+#include <netinet/in.h>
 #include <errno.h>
-#else 
+#else
 
 #endif
 
 namespace TiltedPhoques
 {
-	void InitializeNetwork();
-	void ShutdownNetwork();
+    void InitializeNetwork();
+    void ShutdownNetwork();
 
-	using Socket_t = decltype(socket(AF_INET, SOCK_DGRAM, 0));
+    using Socket_t = decltype(socket(AF_INET, SOCK_DGRAM, 0));
 }
