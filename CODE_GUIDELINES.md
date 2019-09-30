@@ -1,6 +1,8 @@
+# Code guidelines
+
 ## Language
 
-We are using C++17, any C++17 feature supported by vs2017 is allowed. 
+We are using C++17, any C++17 feature supported by vs2017 is allowed.
 
 Please try to use templates responsibly, we don't want compilation times to explode and to deal with bloated binaries.
 
@@ -43,4 +45,3 @@ Names must be self explanatory, ``size_t a;`` is not acceptable, ``size_t incomi
 Don't use java style blocks, a ``{`` needs to be on a new line.
 
 Don't use exceptions, don't use STL code that can throw, use the nothrow version if available or the unsafe version. Use the Outcome class to return the value or an error.
-

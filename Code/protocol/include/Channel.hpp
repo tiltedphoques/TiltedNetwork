@@ -5,32 +5,32 @@
 
 namespace TiltedPhoques
 {
-	struct Channel
-	{
-		enum Type
-		{
-			kReliable,
-			kUnreliable,
-			kSequenced
-		};
+    struct Channel
+    {
+        enum Type
+        {
+            kReliable,
+            kUnreliable,
+            kSequenced
+        };
 
-		Channel(Type aType, std::function<void(Buffer*)> aMessageReceivedCallback);
-		~Channel();
+        Channel(Type aType, std::function<void(Buffer*)> aMessageReceivedCallback);
+        ~Channel();
 
-		TP_NOCOPYMOVE(Channel);
-		TP_ALLOCATOR;
+        TP_NOCOPYMOVE(Channel);
+        TP_ALLOCATOR;
 
-		void ProcessPacket(Buffer::Reader* apReader);
+        void ProcessPacket(Buffer::Reader* apReader);
 
-	protected:
+    protected:
 
-		void ProcessUnreliablePacket(Buffer::Reader* apReader);
-		void ProcessReliablePacket(Buffer::Reader* apReader);
-		void ProcessSequencedPacket(Buffer::Reader* apReader);
+        void ProcessUnreliablePacket(Buffer::Reader* apReader);
+        void ProcessReliablePacket(Buffer::Reader* apReader);
+        void ProcessSequencedPacket(Buffer::Reader* apReader);
 
-	private:
+    private:
 
-		Type m_type;
-		std::function<void(Buffer*)> m_messageReceivedCallback;
-	};
+        Type m_type;
+        std::function<void(Buffer*)> m_messageReceivedCallback;
+    };
 }

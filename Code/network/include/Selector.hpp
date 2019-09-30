@@ -4,14 +4,14 @@
 
 namespace TiltedPhoques
 {
-	struct Selector
-	{
-		Selector(Socket& aSocket);
+    struct Selector
+    {
+        Selector(Socket& aSocket);
 
-		bool IsReady() const;
+        bool IsReady() const;
 
-	private:
+    private:
 
-		Socket_t m_sock;
-	};
+        Socket_t m_sock;
+    };
 }

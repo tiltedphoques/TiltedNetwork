@@ -35,7 +35,7 @@ function CreateProtocolProject(basePath, coreBasePath)
             basePath .. "/Code/protocol/include/**.hpp",
             basePath .. "/Code/protocol/src/**.cpp",
         }
-        
+
         links
         {
             "Core",
@@ -50,21 +50,21 @@ function CreateCryptoppProject(basePath)
         language "C++"
         kind "StaticLib"
         targetname "cryptopp"
-       
-            
-        defines 
+
+
+        defines
         {
             "_WINSOCK_DEPRECATED_NO_WARNINGS",
             "_LIB",
             "CRYPTOPP_DISABLE_SSSE3"
         }
-        
+
         includedirs
         {
             basePath .. "/ThirdParty/cryptopp/",
         }
-        
-        files 
+
+        files
         {
             basePath .. "/ThirdParty/cryptopp/*.h",
             basePath .. "/ThirdParty/cryptopp/3way.cpp",
@@ -191,20 +191,20 @@ function CreateCryptoppProject(basePath)
             basePath .. "/ThirdParty/cryptopp/zlib.cpp",
             basePath .. "/ThirdParty/cryptopp/keccak_core.cpp"
         }
-        
+
         filter "platforms:x64"
             files {
                 basePath .. "/ThirdParty/cryptopp/x64dll.asm",
                 basePath .. "/ThirdParty/cryptopp/x64masm.asm"
             }
-        
+
         filter {"system:windows"}
             linkoptions { "/ignore:4221" }
             disablewarnings { "4005" }
 
         filter {"system:windows", "toolset:*_xp*"}
             defines { "USE_MS_CRYPTOAPI", "_WIN32_WINNT=0x502", "NTDDI_VERSION=0x05020300" }
-            
+
         filter {}
 
 end
