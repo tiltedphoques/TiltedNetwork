@@ -93,11 +93,5 @@ workspace ("Tilted Network")
             filter { "architecture:*64" }
                 libdirs { "lib/x64" }
                 targetdir ("bin/x64")
-
-    group ("Libraries")
-        CreateCoreProject("../../TiltedCore")
-        CreateNetworkProject("..", "../../TiltedCore")
-        CreateProtocolProject("..", "../../TiltedCore")
-
-    group("ThirdParty")
-        CreateCryptoppProject("..")
+		
+    premake.extensions.network.generate()

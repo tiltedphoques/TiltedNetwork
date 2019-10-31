@@ -1,24 +1,21 @@
-function CreateNetworkProject(basePath, coreBasePath)
-    project ("Network")
-        kind ("StaticLib")
-        language ("C++")
+premake.extensions.network = {}
 
-        includedirs
-        {
-            coreBasePath .. "/Code/core/include/",
-            basePath .. "/Code/network/include/",
-            basePath .. "/Code/protocol/include/",
-        }
-
-        files
-        {
-            basePath .. "/Code/network/include/**.hpp",
-            basePath .. "/Code/network/src/**.cpp",
-        }
-
+function network_parent_path()
+    local str = debug.getinfo(2, "S").source:sub(2)
+    local dir =  str:match("(.*/)"):sub(0,-2)
+    local index = string.find(dir, "/[^/]*$")
+    return dir:sub(0, index)
 end
 
-function CreateProtocolProject(basePath, coreBasePath)
+function network_protocol_generate()
+
+    if premake.extensions.network.protocol_generated == true then
+        return
+    end
+
+    local basePath = premake.extensions.network.path
+    local coreBasePath = premake.extensions.core.path
+
     project ("Protocol")
         kind ("StaticLib")
         language ("C++")
@@ -42,10 +39,18 @@ function CreateProtocolProject(basePath, coreBasePath)
             "cryptopp"
         }
 
+    premake.extensions.network.protocol_generated = true
 
 end
 
-function CreateCryptoppProject(basePath)
+function network_crypto_generate()
+
+    if premake.extensions.network.crypto_generated == true then
+        return
+    end
+
+    local basePath = premake.extensions.network.path
+
     project "cryptopp"
         language "C++"
         kind "StaticLib"
